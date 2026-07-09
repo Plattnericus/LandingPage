@@ -1,0 +1,5 @@
+Nexor / Plattnericus
+Site: https://plattnericus.dev
+GitHub: https://github.com/Plattnericus
+
+Built with Next.js, TypeScript, GSAP, Lenis and Tailwind CSS.

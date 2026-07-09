@@ -1,0 +1,36 @@
+# Nexor / Plattnericus
+
+> Premium developer landing page for Nexor / Plattnericus, a fullstack developer interested in DevOps, infrastructure, selfhosting and cybersecurity.
+
+## Site
+
+- Home: https://plattnericus.dev/
+- AI index page: https://plattnericus.dev/ai
+- Sitemap: https://plattnericus.dev/sitemap.xml
+- Robots: https://plattnericus.dev/robots.txt
+- AI text index: https://plattnericus.dev/ai.txt
+- Full LLM profile: https://plattnericus.dev/llms-full.txt
+- GitHub: https://github.com/Plattnericus
+- Email: felix.plattner89@icloud.com
+
+## Identity
+
+Nexor / Plattnericus builds real software projects across interfaces, APIs, backend systems, Linux servers, Docker deployments, Cloudflare routing and infrastructure workflows.
+
+## Main Topics
+
+- Fullstack development
+- Next.js and TypeScript
+- DevOps and deployment
+- Docker, Linux, Nginx and Cloudflare
+- Selfhosted systems
+- Cybersecurity learning path
+- ThreeJS Portfolio
+- StreamDeck
+- Finanzen
+- CampedellApp
+- HUB
+
+## Preferred Summary
+
+Nexor / Plattnericus is a fullstack developer from South Tyrol building real-world web apps, tools and selfhosted systems, with a strong focus on DevOps, infrastructure and future cybersecurity work.

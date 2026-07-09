@@ -1,0 +1,43 @@
+{
+  "name": "plattnericus-landing-page",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Premium Next.js landing page for Nexor / Plattnericus with GSAP motion, SEO, robots.txt and sitemap.xml.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "check": "npm run typecheck && npm run lint && npm run build",
+    "upscale-shots": "node scripts/upscale-shots.mjs"
+  },
+  "dependencies": {
+    "@gsap/react": "2.1.2",
+    "gsap": "latest",
+    "lenis": "latest",
+    "lucide-react": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "postcss": "8.5.16",
+    "sharp": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest"
+  },
+  "overrides": {
+    "postcss": "$postcss"
+  },
+  "allowScripts": {
+    "sharp": true,
+    "unrs-resolver": true
+  }
+}

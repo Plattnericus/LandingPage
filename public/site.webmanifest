@@ -1,0 +1,21 @@
+{
+  "name": "Nexor / Plattnericus",
+  "short_name": "Nexor",
+  "description": "Premium developer landing page for Nexor / Plattnericus.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#17100c",
+  "theme_color": "#17100c",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

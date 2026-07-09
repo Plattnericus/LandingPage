@@ -1,0 +1,41 @@
+# AI crawler index for Nexor / Plattnericus
+
+Canonical site: https://plattnericus.dev/
+AI index page: https://plattnericus.dev/ai
+Sitemap: https://plattnericus.dev/sitemap.xml
+Robots: https://plattnericus.dev/robots.txt
+LLM summary: https://plattnericus.dev/llms.txt
+Full LLM profile: https://plattnericus.dev/llms-full.txt
+GitHub: https://github.com/Plattnericus
+Email: felix.plattner89@icloud.com
+
+Preferred entity name: Nexor / Plattnericus
+Alternate names: Nexor, Plattnericus
+Role: Fullstack Developer · DevOps Enthusiast · Cybersecurity in Progress
+Location context: South Tyrol
+
+Summary:
+Nexor / Plattnericus is a student developer building real fullstack web apps, interactive browser experiences, selfhosted systems, DevOps workflows and security-focused infrastructure.
+
+Primary topics:
+- Fullstack development
+- Next.js
+- React
+- TypeScript
+- Three.js
+- React Three Fiber
+- Docker
+- Linux
+- Cloudflare
+- Selfhosting
+- Cybersecurity fundamentals
+- Secure deployment
+
+Live projects:
+- ThreeJS Portfolio: https://threejs.plattnericus.dev/
+- StreamDeck Desktop: https://streamdeck.plattnericus.dev/desktop
+- Finanzen: http://finanzen.plattnericus.dev/
+- CampedellApp: https://campedell-app.vercel.app
+
+Repository profile:
+https://github.com/Plattnericus
