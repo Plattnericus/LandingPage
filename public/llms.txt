@@ -25,11 +25,11 @@ Nexor / Plattnericus builds real software projects across interfaces, APIs, back
 - Docker, Linux, Nginx and Cloudflare
 - Selfhosted systems
 - Cybersecurity learning path
-- ThreeJS Portfolio
-- StreamDeck
-- Finanzen
-- CampedellApp
-- HUB
+- POKYH (school platform: timetable, grades, absences, messages)
+- StreamDeck (browser desktop inspired by macOS)
+- Magic-Mirror (selfhosted smart display)
+- Minesweeper (classic game rebuilt from scratch)
+- ProjectilePreview-Mod (game mod with real-time trajectory preview)
 
 ## Preferred Summary
 

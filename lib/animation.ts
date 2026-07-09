@@ -48,6 +48,13 @@ export const PIN = {
   future: 2200,
 } as const;
 
+/** Orbit project carousel: 5 items, 4 steps around the half circle. */
+export const ORBIT = {
+  stepDeg: 44,
+  steps: 4,
+  pin: 4800,
+} as const;
+
 export const BP_DESKTOP = "(min-width: 900px)";
 export const BP_MOBILE = "(max-width: 899px)";
 export const NO_MOTION_PREF = "(prefers-reduced-motion: no-preference)";

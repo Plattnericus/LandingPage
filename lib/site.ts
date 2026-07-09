@@ -24,10 +24,11 @@ export const siteConfig = {
     "Cloudflare",
     "Selfhosting",
     "South Tyrol Developer",
-    "ThreeJS Portfolio",
+    "POKYH",
     "StreamDeck",
-    "Finanzen",
-    "CampedellApp",
+    "Magic-Mirror",
+    "Minesweeper",
+    "ProjectilePreview-Mod",
   ],
 } as const;
 

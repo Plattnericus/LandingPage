@@ -1,7 +1,16 @@
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
+import ContactSection from "@/components/sections/ContactSection";
+import CybersecurityScan from "@/components/sections/CybersecurityScan";
+import FutureVision from "@/components/sections/FutureVision";
 import HeroPinnedStory from "@/components/sections/HeroPinnedStory";
+import InfrastructurePipeline from "@/components/sections/InfrastructurePipeline";
 import IntroReveal from "@/components/sections/IntroReveal";
+import PokyhStory from "@/components/sections/PokyhStory";
+import ProjectShowcase from "@/components/sections/ProjectShowcase";
 import StatementSection from "@/components/sections/StatementSection";
+import StreamDeckStory from "@/components/sections/StreamDeckStory";
+import TechStackSection from "@/components/sections/TechStackSection";
+import { getGithubSummary } from "@/lib/github";
 import { projects } from "@/lib/projects";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
@@ -139,7 +148,9 @@ const jsonLd = {
   ],
 };
 
-export default function Home() {
+export default async function Home() {
+  const github = await getGithubSummary();
+
   return (
     <>
       <script
@@ -153,6 +164,14 @@ export default function Home() {
         <main>
           <HeroPinnedStory />
           <StatementSection />
+          <ProjectShowcase github={github} />
+          <PokyhStory />
+          <StreamDeckStory github={github} />
+          <InfrastructurePipeline />
+          <CybersecurityScan />
+          <TechStackSection />
+          <FutureVision />
+          <ContactSection github={github} />
         </main>
       </SmoothScrollProvider>
     </>

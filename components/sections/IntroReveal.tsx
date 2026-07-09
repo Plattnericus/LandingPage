@@ -59,6 +59,12 @@ export default function IntroReveal() {
           { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.75, ease: EASE.out },
           0.2,
         )
+        .fromTo(
+          ".intro-line",
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.55, ease: EASE.inOut },
+          0.5,
+        )
         .add(completeIntro, 1.02)
         .to(root, { autoAlpha: 0, duration: 0.45, ease: EASE.inOut }, 1.05);
 
@@ -78,6 +84,7 @@ export default function IntroReveal() {
         <div className="intro-glow" aria-hidden="true" />
         <p className="intro-domain">plattnericus.dev</p>
         <p className="intro-logo">Nexor</p>
+        <span className="intro-line" aria-hidden="true" />
       </div>
     </div>
   );

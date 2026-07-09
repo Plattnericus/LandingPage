@@ -30,35 +30,34 @@ Nexor / Plattnericus works across frontend, backend, infrastructure and deployme
 - Cybersecurity fundamentals
 - Secure deployment practices
 
-## Live Projects
+## Showcased Projects
 
-### ThreeJS Portfolio
+### POKYH
 
-Live URL: https://threejs.plattnericus.dev/
-Repository: https://github.com/Plattnericus/ThreeJS_Portfolio
-Description: Interactive 3D portfolio built with Next.js, Three.js and React Three Fiber, visualizing GitHub stars as a living WebGL world.
-Technologies: Next.js, Three.js, React Three Fiber, TypeScript
+Description: A school-focused platform built around real student workflows: timetable, grades, absences, messages, mobile app, backend, APIs and deployment.
+Technologies: Next.js, TypeScript, API, Docker, Cloudflare
 
 ### StreamDeck
 
 Live URL: https://streamdeck.plattnericus.dev/desktop
 Repository: https://github.com/Plattnericus/StreamDeck
-Description: Interactive browser desktop with polished windows, tools and a macOS-inspired browser experience.
+Description: An interactive web desktop with app-like windows, tools and a polished browser-based experience, inspired by macOS.
 Technologies: React, JavaScript, desktop UI, motion
 
-### Finanzen
+### Magic-Mirror
 
-Live URL: http://finanzen.plattnericus.dev/
-Repository: https://github.com/Plattnericus/Finanzen
-Description: School finance project with market views, search, analysis pages and an educational information flow.
-Technologies: HTML, charts, finance education, UI
+Description: A wall-mounted smart display running on a Raspberry Pi: time, weather and daily information rendered as a calm always-on interface.
+Technologies: JavaScript, Node.js, Raspberry Pi, selfhosting
 
-### CampedellApp
+### Minesweeper
 
-Live URL: https://campedell-app.vercel.app
-Repository: https://github.com/Plattnericus/CampedellApp
-Description: Polished multilingual product app experience for Campedell with a real deployed interface.
-Technologies: Next.js, TypeScript, product UI
+Description: The classic logic game rebuilt from scratch: clean grid state, flood reveals, flagging and a focused minimal interface.
+Technologies: game logic, grid algorithms, UI
+
+### ProjectilePreview-Mod
+
+Description: A game mod that renders the predicted flight path of projectiles in real time, directly inside the game world.
+Technologies: Java, modding, physics
 
 ## Search And AI Discovery Files
 

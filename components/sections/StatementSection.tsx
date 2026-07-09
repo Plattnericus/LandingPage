@@ -35,6 +35,23 @@ export default function StatementSection() {
           ease: EASE.soft,
           scrollTrigger: { trigger: section, start: "top 55%" },
         });
+        gsap.from(".statement-float", {
+          autoAlpha: 0,
+          scale: 0,
+          stagger: 0.12,
+          duration: 0.9,
+          ease: "back.out(1.8)",
+          scrollTrigger: { trigger: section, start: "top 60%" },
+        });
+        gsap.utils.toArray<HTMLElement>(".statement-float", section).forEach((el, index) => {
+          gsap.to(el, {
+            yPercent: 34 + index * 18,
+            duration: 4.4 + index,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+          });
+        });
       });
     },
     { scope: sectionRef },
@@ -43,6 +60,8 @@ export default function StatementSection() {
   return (
     <section ref={sectionRef} className="statement section" aria-labelledby="statement-title">
       <div className="statement-light" aria-hidden="true" />
+      <span className="statement-float orbit-orb stmt-float-a" aria-hidden="true" />
+      <span className="statement-float orbit-ring stmt-float-b" aria-hidden="true" />
       <div className="section-inner narrow">
         <AnimatedHeadline as="h2" id="statement-title" className="section-title" mode="scrub-blur">
           I build things that actually run.

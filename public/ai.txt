@@ -31,11 +31,12 @@ Primary topics:
 - Cybersecurity fundamentals
 - Secure deployment
 
-Live projects:
-- ThreeJS Portfolio: https://threejs.plattnericus.dev/
-- StreamDeck Desktop: https://streamdeck.plattnericus.dev/desktop
-- Finanzen: http://finanzen.plattnericus.dev/
-- CampedellApp: https://campedell-app.vercel.app
+Showcased projects:
+- POKYH: school platform around real student workflows (timetable, grades, absences, messages, mobile app, backend, APIs, deployment)
+- StreamDeck: interactive browser desktop inspired by macOS, live at https://streamdeck.plattnericus.dev/desktop
+- Magic-Mirror: selfhosted smart display on a Raspberry Pi
+- Minesweeper: the classic logic game rebuilt from scratch
+- ProjectilePreview-Mod: game mod rendering predicted projectile flight paths in real time
 
 Repository profile:
 https://github.com/Plattnericus

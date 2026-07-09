@@ -28,51 +28,102 @@ export default function HeroPinnedStory() {
         const title = section.querySelector<HTMLElement>(".hero-title");
         if (!title) return;
 
-        /* --- entrance, played on intro handoff --- */
+        /* ------------------------------------------------------------ */
+        /* Entrance — played on intro handoff                            */
+        /* ------------------------------------------------------------ */
         const split = SplitText.create(title, { type: "chars" });
         const entrance = gsap.timeline({ paused: true });
         entrance
           .fromTo(
             title,
-            { autoAlpha: 0, filter: "blur(14px)" },
-            { autoAlpha: 1, filter: "blur(0px)", duration: 0.9, ease: EASE.out },
+            { autoAlpha: 0, filter: "blur(16px)" },
+            { autoAlpha: 1, filter: "blur(0px)", duration: 1.0, ease: EASE.out },
             0,
           )
           .fromTo(
             split.chars,
-            { yPercent: 68, autoAlpha: 0 },
-            { yPercent: 0, autoAlpha: 1, duration: 0.95, stagger: 0.05, ease: EASE.out },
+            { yPercent: 120, rotationX: -85, autoAlpha: 0 },
+            {
+              yPercent: 0,
+              rotationX: 0,
+              autoAlpha: 1,
+              duration: 1.1,
+              stagger: { each: 0.06, from: "center" },
+              ease: "back.out(1.4)",
+            },
             0.05,
           )
           .fromTo(
             ".hero-eyebrow",
-            { autoAlpha: 0, y: 18 },
-            { autoAlpha: 1, y: 0, duration: 0.7, ease: EASE.out },
-            0.12,
+            { autoAlpha: 0, letterSpacing: "0.6em" },
+            { autoAlpha: 1, letterSpacing: "0.28em", duration: 0.9, ease: EASE.out },
+            0.15,
+          )
+          .fromTo(
+            ".hero-halo",
+            { autoAlpha: 0, scale: 0.72 },
+            { autoAlpha: 1, scale: 1, duration: 1.3, ease: EASE.soft },
+            0.2,
           )
           .fromTo(
             ".hero-role",
-            { autoAlpha: 0, y: 22 },
-            { autoAlpha: 1, y: 0, duration: 0.75, ease: EASE.out },
-            0.3,
+            { autoAlpha: 0, y: 24, filter: "blur(6px)" },
+            { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: EASE.out },
+            0.34,
           )
           .fromTo(
             ".hero-lead",
-            { autoAlpha: 0, y: 24 },
+            { autoAlpha: 0, y: 26 },
             { autoAlpha: 1, y: 0, duration: 0.8, ease: EASE.out },
-            0.42,
+            0.46,
           )
           .fromTo(
             ".hero-actions .btn",
-            { autoAlpha: 0, y: 26 },
-            { autoAlpha: 1, y: 0, duration: 0.75, stagger: 0.08, ease: EASE.out },
-            0.52,
+            { autoAlpha: 0, y: 30, scale: 0.92 },
+            { autoAlpha: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.09, ease: "back.out(1.6)" },
+            0.56,
           )
-          .fromTo(".hero-scroll-cue", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, 0.95);
+          .fromTo(
+            ".hero-orbit",
+            { autoAlpha: 0, scale: 0 },
+            { autoAlpha: 1, scale: 1, duration: 0.85, stagger: 0.07, ease: "back.out(1.8)" },
+            0.72,
+          )
+          .fromTo(".hero-scroll-cue", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, 1.0)
+          .to(
+            title,
+            { textShadow: "0 0 90px rgba(221, 184, 146, 0.55)", duration: 0.5, ease: "power2.out" },
+            1.12,
+          )
+          .to(
+            title,
+            { textShadow: "0 0 36px rgba(221, 184, 146, 0.2)", duration: 1.0, ease: "power2.inOut" },
+            1.62,
+          );
         entranceRef.current = entrance;
         if (introDoneRef.current) entrance.play(0);
 
-        /* --- pinned scroll story: Build. Deploy. Secure. --- */
+        /* ------------------------------------------------------------ */
+        /* Ambient infinite motion (composes with depth + entrance)      */
+        /* ------------------------------------------------------------ */
+        gsap.to(".orbit-spin", { rotation: 360, duration: 52, ease: "none", repeat: -1 });
+        gsap.to(".hero-halo", { rotation: 360, duration: 64, ease: "none", repeat: -1 });
+        gsap.utils.toArray<HTMLElement>(".hero-orbit", section).forEach((orbit, index) => {
+          gsap.to(orbit, {
+            yPercent: 26 + ((index * 17) % 44),
+            duration: 3.8 + index * 0.7,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+          });
+        });
+
+        /* ------------------------------------------------------------ */
+        /* Pinned scroll story: Build. Deploy. Secure.                   */
+        /* All scrubbed tweens use explicit fromTo values with           */
+        /* immediateRender: false so scrolling back up always restores   */
+        /* the true resting state (never a mid-entrance snapshot).       */
+        /* ------------------------------------------------------------ */
         const words = gsap.utils.toArray<HTMLElement>(".hero-word", section);
         const pinTl = gsap.timeline({
           defaults: { ease: "none" },
@@ -85,15 +136,49 @@ export default function HeroPinnedStory() {
             pin: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              const tl = entranceRef.current;
+              if (self.progress > 0.01 && tl && tl.progress() < 1) tl.progress(1);
+            },
           },
         });
 
         pinTl
-          .to(".hero-scroll-cue", { autoAlpha: 0, duration: 0.4 }, 0)
-          .to(title, { scale: 0.75, autoAlpha: 0.22, duration: 2, ease: "power1.in" }, 0)
-          .to(
+          .fromTo(
+            ".hero-scroll-cue",
+            { autoAlpha: 1 },
+            { autoAlpha: 0, duration: 0.4, immediateRender: false },
+            0,
+          )
+          .fromTo(
+            title,
+            { scale: 1, autoAlpha: 1 },
+            { scale: 0.75, autoAlpha: 0.22, duration: 2, ease: "power1.in", immediateRender: false },
+            0,
+          )
+          .fromTo(
             ".hero-eyebrow, .hero-role, .hero-lead, .hero-actions",
-            { autoAlpha: 0.1, y: -28, duration: 2, ease: "power1.in" },
+            { autoAlpha: 1, y: 0 },
+            { autoAlpha: 0.1, y: -30, duration: 2, ease: "power1.in", immediateRender: false },
+            0,
+          )
+          .fromTo(
+            ".hero-halo",
+            { autoAlpha: 1, scale: 1 },
+            { autoAlpha: 0.14, scale: 1.18, duration: 2.2, ease: "power1.in", immediateRender: false },
+            0,
+          )
+          .fromTo(
+            ".hero-orbit",
+            { autoAlpha: 1, scale: 1 },
+            {
+              autoAlpha: 0,
+              scale: 1.5,
+              duration: 1.7,
+              stagger: 0.05,
+              ease: "power1.in",
+              immediateRender: false,
+            },
             0,
           );
 
@@ -103,12 +188,29 @@ export default function HeroPinnedStory() {
           pinTl.fromTo(
             word,
             { autoAlpha: 0, y: 90, filter: "blur(16px)" },
-            { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 1.1, ease: "power2.out" },
+            {
+              autoAlpha: 1,
+              y: 0,
+              filter: "blur(0px)",
+              duration: 1.1,
+              ease: "power2.out",
+              immediateRender: false,
+            },
             at,
           );
           if (index > 0) {
-            pinTl.to(glowByWord[index - 1], { autoAlpha: 0, duration: 1.4 }, at - 0.4);
-            pinTl.to(glowByWord[index], { autoAlpha: 1, duration: 1.4 }, at - 0.2);
+            pinTl.fromTo(
+              glowByWord[index - 1],
+              { autoAlpha: 1 },
+              { autoAlpha: 0, duration: 1.4, immediateRender: false },
+              at - 0.4,
+            );
+            pinTl.fromTo(
+              glowByWord[index],
+              { autoAlpha: 0 },
+              { autoAlpha: 1, duration: 1.4, immediateRender: false },
+              at - 0.2,
+            );
           }
           if (index < words.length - 1) {
             pinTl.to(
@@ -135,15 +237,21 @@ export default function HeroPinnedStory() {
   }, [introDone]);
 
   return (
-    <section
-      ref={sectionRef}
-      className="hero section"
-      aria-labelledby="hero-title"
-    >
+    <section ref={sectionRef} className="hero section" aria-labelledby="hero-title">
       <div className="hero-glows" data-depth="26" aria-hidden="true">
         <div className="hero-glow hero-glow-tan" />
         <div className="hero-glow hero-glow-sand" />
         <div className="hero-glow hero-glow-copper" />
+      </div>
+      <div className="hero-halo" aria-hidden="true" />
+      <div className="hero-orbits" aria-hidden="true">
+        <span className="hero-orbit orbit-ring orbit-spin orbit-a" data-depth="30" />
+        <span className="hero-orbit orbit-ring orbit-b" data-depth="16" />
+        <span className="hero-orbit orbit-orb orbit-c" data-depth="24" />
+        <span className="hero-orbit orbit-orb orbit-d" data-depth="12" />
+        <span className="hero-orbit orbit-cross orbit-e" data-depth="34" />
+        <span className="hero-orbit orbit-dot orbit-f" data-depth="10" />
+        <span className="hero-orbit orbit-dashed orbit-spin orbit-g" data-depth="20" />
       </div>
       <div className="hero-inner section-inner">
         <p className="eyebrow hero-eyebrow">plattnericus.dev</p>

@@ -9,8 +9,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "check": "npm run typecheck && npm run lint && npm run build",
-    "upscale-shots": "node scripts/upscale-shots.mjs"
+    "check": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "@gsap/react": "2.1.2",
@@ -29,7 +28,6 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "postcss": "8.5.16",
-    "sharp": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
   },
@@ -37,7 +35,6 @@
     "postcss": "$postcss"
   },
   "allowScripts": {
-    "sharp": true,
     "unrs-resolver": true
   }
 }

@@ -1,176 +1,62 @@
-# plattnericus.dev Landing Page
+# plattnericus.dev
 
-Premium Next.js landing page for Nexor / Plattnericus.
+Cinematic developer landing page for **Nexor / Plattnericus** — built like an
+Apple product page, not a portfolio template. One long scroll-driven story:
+intro reveal, pinned hero, horizontal project showcase, two product case
+studies, an animated DevOps pipeline, a cybersecurity radar, tech stack,
+future vision and contact.
 
-This is not a generic portfolio template. The page is built as a cinematic developer product page with real project screenshots, GSAP-driven motion graphics, strong SEO, AI-discovery files and a live GitHub signal at the end.
+## Stack
 
-## Current Build
+- **Next.js 16** (App Router, React 19, TypeScript strict)
+- **GSAP 3.15** — ScrollTrigger, SplitText, DrawSVG, MotionPath, CustomEase, ScrambleText (+ `@gsap/react`)
+- **Lenis** smooth scroll, synced to the GSAP ticker
+- **Tailwind CSS v4** + custom design system (warm coffee/almond palette, Apple system font stack)
+- **lucide-react** icons — no emojis anywhere
 
-- Framework: Next.js 16
-- Language: TypeScript
-- Styling: Tailwind CSS v4 entry plus custom global CSS
-- Motion: GSAP, ScrollTrigger and Lenis
-- Icons: lucide-react
-- Images: real live-site screenshots, upscaled to 8K WebP
-- SEO: Next Metadata API, JSON-LD, Open Graph image, Twitter image, robots.txt and sitemap.xml
-- AI discovery: `llms.txt`
-- GitHub data: `/api/github` route with token fallback support
+All project visuals (device mockups, macOS desktop, system map, pipeline,
+radar) are code-rendered CSS/SVG motion graphics — no bitmap screenshots.
 
-## Live Project Screenshots
+## Sections
 
-The showcase uses real screenshots from deployed projects:
+1. Cinematic intro (`plattnericus.dev` → `Nexor`, max 1.5s)
+2. Pinned hero with Build. / Deploy. / Secure. word story, magnetic buttons, mouse-depth, floating elements
+3. Statement (blur-to-sharp reveal)
+4. Horizontal pinned project showcase — POKYH, StreamDeck, Magic-Mirror, Minesweeper, ProjectilePreview-Mod
+5. POKYH product story (pinned devices, screen switching, infrastructure system map)
+6. StreamDeck product story (macOS-style desktop, windows open on scroll, typing terminal)
+7. DevOps pipeline (GitHub → CI/CD → Docker → VPS → Reverse Proxy → Cloudflare → Live App, DrawSVG + MotionPath packets)
+8. Cybersecurity future (radar scan, checklist ticking)
+9. Tech stack
+10. Future vision (pinned word story)
+11. Contact with live GitHub stats
 
-- ThreeJS Portfolio: `https://threejs.plattnericus.dev/`
-- StreamDeck Desktop: `https://streamdeck.plattnericus.dev/desktop`
-- Finanzen: `http://finanzen.plattnericus.dev/`
-- CampedellApp: `https://campedell-app.vercel.app`
+Also: animated canvas favicon (scroll progress ring, tab-switch state),
+`prefers-reduced-motion` renders a fully static readable page, mobile turns
+pinned/horizontal stories into vertical stacks.
 
-Raw screenshots live in:
+## Live GitHub data
 
-```txt
-public/project-shots/
+`lib/github.ts` fetches `api.github.com/users/Plattnericus/repos` server-side
+(ISR, revalidates hourly) and feeds project slides, the StreamDeck case study
+and the contact stats strip. Repos that are not public simply show no stats —
+numbers are never invented. `/api/github` exposes the same payload.
+
+Token (optional, avoids rate limits) in `.env`:
+
+```
+GITHUB-TOKEN=...   # GITHUB_TOKEN and GH_TOKEN work too
 ```
 
-8K upscaled versions live in:
+## Develop
 
-```txt
-public/project-shots/8k/
+```
+npm run dev     # dev server
+npm run check   # typecheck + eslint + production build
 ```
 
-Upscaling is handled by:
+## SEO / discovery
 
-```bash
-npm run upscale-shots
-```
-
-The script upscales every screenshot to 7680px width, writes WebP output and compares the result against the original after downscaling. It fails if the visual drift is too high.
-
-## SEO
-
-Implemented SEO surfaces:
-
-- Google Lighthouse SEO score: `100`
-- Google Search Console verification support through `GOOGLE_SITE_VERIFICATION`
-- static `metadata` in `app/layout.tsx`
-- canonical URL for `https://plattnericus.dev`
-- self-referencing `hreflang` and `x-default`
-- Open Graph metadata
-- Twitter card metadata
-- generated static `/opengraph-image`
-- generated static `/twitter-image`
-- generated static `/icon`
-- generated static `/apple-icon`
-- JSON-LD graph for Person, WebSite and ProfilePage
-- generated `/robots.txt`
-- generated `/sitemap.xml`
-- public `/llms.txt`
-- public `/humans.txt`
-- `site.webmanifest`
-
-The robots file allows general search crawlers and known AI/search crawlers, then points to the sitemap.
-
-## GitHub API
-
-The landing page includes a final live GitHub section powered by:
-
-```txt
-app/api/github/route.ts
-```
-
-The route reads a token from one of these environment keys:
-
-```txt
-GITHUB-TOKEN
-GITHUB_TOKEN
-GH_TOKEN
-```
-
-It only returns sanitized public repository data. If the token is missing or invalid, it falls back to unauthenticated public GitHub API access.
-
-## Google Search Console
-
-Optional Search Console verification is supported through:
-
-```txt
-GOOGLE_SITE_VERIFICATION=your_google_search_console_verification_token
-```
-
-When this value is present at build time, Next.js emits the Google verification meta tag automatically.
-
-## Development
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Run locally:
-
-```bash
-npm run dev
-```
-
-Build:
-
-```bash
-npm run build
-```
-
-Full check:
-
-```bash
-npm run check
-```
-
-Audit dependencies:
-
-```bash
-npm audit
-```
-
-## Important Commands
-
-```bash
-npm run typecheck
-npm run lint
-npm run build
-npm run check
-npm run upscale-shots
-```
-
-## Visual Direction
-
-The site should feel:
-
-- premium
-- technical
-- calm
-- cinematic
-- real
-- product-like
-
-It should not feel like:
-
-- a generic Tailwind template
-- a normal card-grid portfolio
-- a fake hacker page
-- a SaaS landing page
-- an icon wall
-- an AI-generated placeholder design
-
-## Definition of Done
-
-The page is in good shape when:
-
-- all project slides use real screenshots
-- project slides click directly to the live project
-- StreamDeck opens `https://streamdeck.plattnericus.dev/desktop`
-- GSAP motion works without console errors
-- reduced-motion users get a stable experience
-- `/robots.txt` and `/sitemap.xml` work
-- `/llms.txt` works
-- GitHub data loads through `/api/github`
-- `npm run check` passes
-- `npm audit` reports 0 vulnerabilities
-- Chrome visual checks confirm no broken layout or empty images
+Metadata + JSON-LD in `app/layout.tsx` / `app/page.tsx`, `robots.ts`,
+`sitemap.ts`, OG/Twitter images, `/ai` index page, `public/llms.txt`,
+`public/llms-full.txt`, `public/ai.txt`, `public/humans.txt`.
