@@ -91,6 +91,36 @@ export default function PokyhStory() {
           );
         };
 
+        /* idle floats while the story is on screen */
+        const floats = [
+          gsap.to(".pokyh-mac", {
+            yPercent: -2.4,
+            duration: 3.6,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+          }),
+          gsap.to(".pokyh-phone-device", {
+            xPercent: -2,
+            duration: 3.0,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+            delay: 0.4,
+          }),
+          gsap.to(".pokyh-avatar", {
+            opacity: 0.55,
+            duration: 1.4,
+            ease: "sine.inOut",
+            stagger: 0.25,
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+          }),
+        ];
+
         const tl = gsap.timeline({
           defaults: { ease: "power2.out" },
           scrollTrigger: isDesktop
@@ -103,6 +133,8 @@ export default function PokyhStory() {
                 pin: true,
                 anticipatePin: 1,
                 invalidateOnRefresh: true,
+                onToggle: (self) =>
+                  floats.forEach((float) => (self.isActive ? float.play() : float.pause())),
               }
             : {
                 id: "pokyh",
@@ -126,11 +158,30 @@ export default function PokyhStory() {
         showScreen(tl, 1, 1.2);
         activateBeat(tl, 1, 1.35);
         popChips(tl, "Interface", 1.5);
+        tl.fromTo(
+          ".pokyh-period",
+          { autoAlpha: 0.2, scale: 0.82 },
+          {
+            autoAlpha: 1,
+            scale: 1,
+            duration: 0.35,
+            stagger: 0.016,
+            ease: "back.out(1.7)",
+            immediateRender: false,
+          },
+          1.5,
+        );
 
         /* API */
         showScreen(tl, 2, 2.5);
         activateBeat(tl, 2, 2.65);
         popChips(tl, "API", 2.8);
+        tl.fromTo(
+          '[data-screen="api"] p',
+          { autoAlpha: 0, x: -14 },
+          { autoAlpha: 1, x: 0, duration: 0.3, stagger: 0.05, immediateRender: false },
+          2.75,
+        );
         tl.to(".map-line", { drawSVG: "34%", duration: 0.8, ease: "power1.inOut" }, 2.9);
 
         /* Mobile */
@@ -140,19 +191,36 @@ export default function PokyhStory() {
           { yPercent: 0, rotation: 0, autoAlpha: 1, duration: 0.9, ease: "back.out(1.2)" },
           3.9,
         );
+        tl.fromTo(
+          ".pokyh-msg",
+          { autoAlpha: 0, x: 18 },
+          { autoAlpha: 1, x: 0, duration: 0.35, stagger: 0.08, immediateRender: false },
+          4.3,
+        );
         popChips(tl, "Mobile", 4.2);
 
         /* Deployment */
         showScreen(tl, 3, 5.1);
         activateBeat(tl, 4, 5.25);
         popChips(tl, "Deployment", 5.4);
+        tl.fromTo(
+          '[data-screen="deploy"] p',
+          { autoAlpha: 0, x: -14 },
+          { autoAlpha: 1, x: 0, duration: 0.3, stagger: 0.06, immediateRender: false },
+          5.35,
+        );
         tl.to(".map-line", { drawSVG: "100%", stagger: 0.12, duration: 1.0, ease: "power1.inOut" }, 5.5)
           .to(".map-node", { autoAlpha: 1, stagger: 0.07, duration: 0.5 }, 5.9);
 
         /* Real Usage — everything becomes a system map */
         activateBeat(tl, 5, 7.0);
-        tl.to(".pokyh-devices", { scale: 0.78, xPercent: -8, yPercent: -6, autoAlpha: 0.3, duration: 1.4, ease: "power2.inOut" }, 7.0)
-          .to(".pokyh-map", { autoAlpha: 1, scale: 1.02, duration: 1.2, ease: "power2.inOut" }, 7.1)
+        tl.to(".pokyh-devices", { scale: 0.66, xPercent: -16, yPercent: 14, autoAlpha: 0.22, duration: 1.4, ease: "power2.inOut" }, 7.0)
+          .fromTo(
+            ".pokyh-map",
+            { scale: 0.92 },
+            { autoAlpha: 1, scale: 1, duration: 1.2, ease: "power2.inOut", immediateRender: false },
+            7.1,
+          )
           .to(".map-label", { autoAlpha: 1, stagger: 0.06, duration: 0.5 }, 7.4)
           .fromTo(
             ".map-pulse",

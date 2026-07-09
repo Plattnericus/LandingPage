@@ -19,6 +19,7 @@ export default function FutureVision() {
         const words = gsap.utils.toArray<HTMLElement>(".future-word", section);
         const strong = section.querySelector<HTMLElement>(".future-strong");
         const split = strong ? SplitText.create(strong, { type: "words", mask: "words" }) : null;
+        if (split) gsap.set(split.words, { yPercent: 120 });
 
         const tl = gsap.timeline({
           defaults: { ease: "power2.out" },

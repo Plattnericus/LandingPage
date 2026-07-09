@@ -18,15 +18,17 @@ import {
 import { findRepoStats, formatRepoDate, type GithubSummary } from "@/lib/github";
 import { projects } from "@/lib/projects";
 
+/* rounded so SSR and client render byte-identical SVG attributes */
+const round2 = (value: number) => Number(value.toFixed(2));
 const TICKS = Array.from({ length: 36 }, (_, i) => {
   const angle = (i * 10 * Math.PI) / 180;
   const outer = 468;
   const inner = i % 3 === 0 ? 448 : 458;
   return {
-    x1: 500 + Math.cos(angle) * outer,
-    y1: 500 + Math.sin(angle) * outer,
-    x2: 500 + Math.cos(angle) * inner,
-    y2: 500 + Math.sin(angle) * inner,
+    x1: round2(500 + Math.cos(angle) * outer),
+    y1: round2(500 + Math.sin(angle) * outer),
+    x2: round2(500 + Math.cos(angle) * inner),
+    y2: round2(500 + Math.sin(angle) * inner),
   };
 });
 

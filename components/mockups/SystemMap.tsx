@@ -1,62 +1,67 @@
 /**
  * Infrastructure system map drawn by GSAP (DrawSVG on .map-line, staggered
  * .map-node pops, .map-label fades, .map-pulse dots on MotionPath).
+ * Sized for the POKYH stage (~1.15:1) with the Docker/VPS box as the star.
  */
 export default function SystemMap({ className }: { className?: string }) {
   return (
     <svg
       className={`system-map ${className ?? ""}`}
-      viewBox="0 0 1200 640"
+      viewBox="0 0 800 640"
       fill="none"
       aria-hidden="true"
     >
-      {/* connections */}
-      <path id="map-route" className="map-line" d="M150 320 C 260 220, 330 200, 440 240 S 640 330, 750 300 S 950 240, 1020 300" />
-      <path className="map-line" d="M1020 340 C 1000 420, 960 450, 900 470" />
-      <path className="map-line" d="M1020 340 C 1050 420, 1080 450, 1120 470" />
-      <path className="map-line" d="M900 500 L 1010 540" />
+      {/* main route: client → cloudflare → nginx → docker/web */}
+      <path
+        id="map-route"
+        className="map-line"
+        d="M110 96 C 210 48, 300 56, 385 92 C 470 128, 570 128, 645 170 C 705 204, 672 252, 606 290 C 560 316, 470 356, 424 410"
+      />
+      <path className="map-line" d="M430 455 C 470 480, 480 490, 502 505" />
+      <path className="map-line" d="M600 455 C 570 480, 560 490, 540 505" />
+      <path className="map-line" d="M645 214 C 660 260, 660 300, 648 330" />
 
       {/* client */}
-      <circle cx="150" cy="320" r="34" className="map-node" />
-      <text x="150" y="388" textAnchor="middle" className="map-label">
+      <circle cx="110" cy="96" r="36" className="map-node" />
+      <text x="110" y="168" textAnchor="middle" className="map-label">
         Client
       </text>
 
       {/* cloudflare */}
-      <rect x="380" y="204" width="130" height="64" rx="16" className="map-node" />
-      <text x="445" y="245" textAnchor="middle" className="map-label on-node">
+      <rect x="300" y="58" width="172" height="68" rx="18" className="map-node" />
+      <text x="386" y="101" textAnchor="middle" className="map-label on-node">
         Cloudflare
       </text>
 
-      {/* reverse proxy */}
-      <rect x="680" y="266" width="150" height="64" rx="16" className="map-node" />
-      <text x="755" y="307" textAnchor="middle" className="map-label on-node">
+      {/* nginx reverse proxy */}
+      <rect x="570" y="146" width="150" height="68" rx="18" className="map-node" />
+      <text x="645" y="189" textAnchor="middle" className="map-label on-node">
         Nginx
       </text>
 
-      {/* VPS boundary */}
-      <rect x="860" y="250" width="320" height="330" rx="22" className="map-node map-vps" />
-      <text x="1020" y="292" textAnchor="middle" className="map-label">
+      {/* VPS / Docker */}
+      <rect x="220" y="330" width="520" height="290" rx="26" className="map-node map-vps" />
+      <text x="480" y="378" textAnchor="middle" className="map-label map-vps-label">
         VPS · Docker
       </text>
 
       {/* containers */}
-      <rect x="884" y="430" width="120" height="58" rx="12" className="map-node map-container" />
-      <text x="944" y="466" textAnchor="middle" className="map-label on-node">
+      <rect x="272" y="410" width="176" height="88" rx="16" className="map-node map-container" />
+      <text x="360" y="462" textAnchor="middle" className="map-label on-node">
         web
       </text>
-      <rect x="1064" y="430" width="96" height="58" rx="12" className="map-node map-container" />
-      <text x="1112" y="466" textAnchor="middle" className="map-label on-node">
+      <rect x="512" y="410" width="176" height="88" rx="16" className="map-node map-container" />
+      <text x="600" y="462" textAnchor="middle" className="map-label on-node">
         api
       </text>
-      <rect x="960" y="512" width="100" height="56" rx="12" className="map-node map-container" />
-      <text x="1010" y="547" textAnchor="middle" className="map-label on-node">
+      <rect x="392" y="505" width="176" height="88" rx="16" className="map-node map-container" />
+      <text x="480" y="557" textAnchor="middle" className="map-label on-node">
         db
       </text>
 
       {/* pulses traveling the main route */}
-      <circle r="6" className="map-pulse" />
-      <circle r="4" className="map-pulse" />
+      <circle r="7" className="map-pulse" />
+      <circle r="5" className="map-pulse" />
     </svg>
   );
 }

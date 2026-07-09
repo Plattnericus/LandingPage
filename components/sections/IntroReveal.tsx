@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import LiquidBlob from "@/components/motion/LiquidBlob";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { EASE, gsap, useGSAP } from "@/lib/animation";
 
@@ -81,6 +82,7 @@ export default function IntroReveal() {
         <style>{`.intro{display:none}`}</style>
       </noscript>
       <div className="intro-stack">
+        <LiquidBlob className="liquid-intro" strength={0.24} />
         <div className="intro-glow" aria-hidden="true" />
         <p className="intro-domain">plattnericus.dev</p>
         <p className="intro-logo">Nexor</p>

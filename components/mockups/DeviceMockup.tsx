@@ -30,6 +30,7 @@ export default function DeviceMockup({ variant, className, url, children }: Devi
         <div className="device-screen">
           <span className="device-island" />
           <div className="device-viewport">{children}</div>
+          <span className="device-homebar" />
         </div>
       </div>
     );
@@ -38,7 +39,9 @@ export default function DeviceMockup({ variant, className, url, children }: Devi
   return (
     <div className={classes}>
       <div className="device-screen">
-        <span className="device-camera" />
+        <span className="device-notch">
+          <i className="device-camera-dot" />
+        </span>
         <div className="device-viewport">{children}</div>
       </div>
       <div className="device-base" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowRight, GitBranch, Mail } from "lucide-react";
+import LiquidBlob from "@/components/motion/LiquidBlob";
 import MagneticButton from "@/components/motion/MagneticButton";
 import { useDepth } from "@/components/motion/useDepth";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
@@ -103,6 +104,40 @@ export default function HeroPinnedStory() {
         entranceRef.current = entrance;
         if (introDoneRef.current) entrance.play(0);
 
+        /* char hover jiggle (desktop pointers) */
+        const charCleanups: Array<() => void> = [];
+        if (isDesktop) {
+          split.chars.forEach((char) => {
+            const el = char as HTMLElement;
+            const onEnter = () => {
+              gsap.to(el, {
+                y: -18,
+                scale: 1.14,
+                rotation: gsap.utils.random(-7, 7),
+                duration: 0.26,
+                ease: "power2.out",
+                overwrite: "auto",
+                onComplete: () =>
+                  gsap.to(el, { y: 0, scale: 1, rotation: 0, duration: 0.9, ease: "elastic.out(1, 0.4)" }),
+              });
+            };
+            el.addEventListener("pointerenter", onEnter);
+            charCleanups.push(() => el.removeEventListener("pointerenter", onEnter));
+          });
+
+          /* mouse spotlight follows the pointer across the hero */
+          const spot = section.querySelector<HTMLElement>(".hero-spot");
+          if (spot) {
+            const onSpot = (event: PointerEvent) => {
+              const rect = section.getBoundingClientRect();
+              spot.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+              spot.style.setProperty("--my", `${event.clientY - rect.top}px`);
+            };
+            section.addEventListener("pointermove", onSpot);
+            charCleanups.push(() => section.removeEventListener("pointermove", onSpot));
+          }
+        }
+
         /* ------------------------------------------------------------ */
         /* Ambient infinite motion (composes with depth + entrance)      */
         /* ------------------------------------------------------------ */
@@ -180,18 +215,26 @@ export default function HeroPinnedStory() {
               immediateRender: false,
             },
             0,
+          )
+          .fromTo(
+            ".liquid-hero",
+            { autoAlpha: 1, scale: 1 },
+            { autoAlpha: 0.15, scale: 1.25, duration: 2.2, ease: "power1.in", immediateRender: false },
+            0,
           );
 
         const glowByWord = [".hero-glow-tan", ".hero-glow-sand", ".hero-glow-copper"];
         words.forEach((word, index) => {
-          const at = 2.4 + index * 3.2;
+          const at = 2.4 + index * 2.9;
           pinTl.fromTo(
             word,
-            { autoAlpha: 0, y: 90, filter: "blur(16px)" },
+            { autoAlpha: 0, y: 90, rotationX: 42, transformPerspective: 720, filter: "blur(16px)" },
             {
               autoAlpha: 1,
               y: 0,
+              rotationX: 0,
               filter: "blur(0px)",
+              textShadow: "0 0 70px rgba(230, 204, 178, 0.4)",
               duration: 1.1,
               ease: "power2.out",
               immediateRender: false,
@@ -213,10 +256,19 @@ export default function HeroPinnedStory() {
             );
           }
           if (index < words.length - 1) {
+            /* overlaps the next word's entrance — with the goo filter the
+               two words melt through each other (iOS liquid feel) */
             pinTl.to(
               word,
-              { autoAlpha: 0, y: -90, filter: "blur(16px)", duration: 1.1, ease: "power2.in" },
-              at + 2.1,
+              {
+                autoAlpha: 0,
+                y: -90,
+                rotationX: -38,
+                filter: "blur(16px)",
+                duration: 1.3,
+                ease: "power2.in",
+              },
+              at + 1.9,
             );
           }
         });
@@ -224,6 +276,7 @@ export default function HeroPinnedStory() {
 
         return () => {
           entranceRef.current = null;
+          charCleanups.forEach((cleanup) => cleanup());
           split.revert();
         };
       });
@@ -243,6 +296,8 @@ export default function HeroPinnedStory() {
         <div className="hero-glow hero-glow-sand" />
         <div className="hero-glow hero-glow-copper" />
       </div>
+      <LiquidBlob className="liquid-hero" strength={0.3} goo />
+      <div className="hero-spot" aria-hidden="true" />
       <div className="hero-halo" aria-hidden="true" />
       <div className="hero-orbits" aria-hidden="true">
         <span className="hero-orbit orbit-ring orbit-spin orbit-a" data-depth="30" />

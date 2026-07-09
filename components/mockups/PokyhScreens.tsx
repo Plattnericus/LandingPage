@@ -1,43 +1,88 @@
-/** CSS/SVG-rendered POKYH app screens, stacked and crossfaded by GSAP. */
+/** CSS/SVG-rendered POKYH app screens, stacked and crossfaded by GSAP.
+    Deliberately recognizable: macOS chrome, labeled navigation, real rows. */
 
-const TIMETABLE_ACCENTS = new Set([1, 7, 10, 14, 18]);
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const PERIODS = [
+  ["Math", "CS", "Eng", "Bio", "CS"],
+  ["Ger", "Math", "Lab", "It", "Eth"],
+  ["CS", "Net", "Ger", "Math", "Gym"],
+  ["Hist", "Eng", "CS", "Lab", "—"],
+];
+const PERIOD_ACCENTS = new Set(["CS", "Net", "Lab"]);
+
+const NAV_ITEMS = [
+  { label: "Dashboard", active: false },
+  { label: "Timetable", active: true },
+  { label: "Grades", active: false },
+  { label: "Absences", active: false },
+  { label: "Messages", active: false },
+  { label: "Security", active: false },
+];
+
+function MacChrome({ title }: { title: string }) {
+  return (
+    <div className="pokyh-chrome">
+      <span className="pv-traffic" />
+      <span className="pv-traffic" />
+      <span className="pv-traffic" />
+      <span className="pokyh-chrome-title">{title}</span>
+      <span className="pokyh-chrome-clock mono">09:41</span>
+    </div>
+  );
+}
 
 export function PokyhMacScreens() {
   return (
     <>
       <div className="pokyh-screen" data-screen="idea">
-        <svg viewBox="0 0 520 320" fill="none" aria-hidden="true">
-          <rect x="18" y="18" width="484" height="44" rx="8" className="wire-path" />
-          <rect x="18" y="80" width="150" height="222" rx="8" className="wire-path" />
-          <rect x="186" y="80" width="316" height="130" rx="8" className="wire-path" />
-          <rect x="186" y="228" width="150" height="74" rx="8" className="wire-path" />
-          <rect x="352" y="228" width="150" height="74" rx="8" className="wire-path" />
-          <line x1="40" y1="104" x2="146" y2="104" className="wire-path thin" />
-          <line x1="40" y1="128" x2="126" y2="128" className="wire-path thin" />
-          <line x1="40" y1="152" x2="140" y2="152" className="wire-path thin" />
-        </svg>
+        <MacChrome title="POKYH — Concept" />
+        <div className="pokyh-idea">
+          <svg viewBox="0 0 520 280" fill="none" aria-hidden="true">
+            <rect x="14" y="14" width="492" height="38" rx="8" className="wire-path" />
+            <rect x="14" y="68" width="140" height="198" rx="8" className="wire-path" />
+            <rect x="172" y="68" width="334" height="112" rx="8" className="wire-path" />
+            <rect x="172" y="196" width="158" height="70" rx="8" className="wire-path" />
+            <rect x="348" y="196" width="158" height="70" rx="8" className="wire-path" />
+            <line x1="34" y1="94" x2="134" y2="94" className="wire-path thin" />
+            <line x1="34" y1="118" x2="114" y2="118" className="wire-path thin" />
+            <line x1="34" y1="142" x2="128" y2="142" className="wire-path thin" />
+          </svg>
+          <p className="pokyh-idea-note mono">idea → wireframe → school platform</p>
+        </div>
       </div>
 
       <div className="pokyh-screen" data-screen="interface">
+        <MacChrome title="POKYH — Timetable" />
         <div className="pokyh-app">
-          <div className="pokyh-app-side">
-            <span className="pv-dot" />
-            <span className="pv-line w80" />
-            <span className="pv-line w60" />
-            <span className="pv-line w70" />
-            <span className="pv-line w50" />
-          </div>
+          <nav className="pokyh-app-side" aria-hidden="true">
+            <p className="pokyh-app-logo">POKYH</p>
+            {NAV_ITEMS.map((item) => (
+              <span key={item.label} className={`pokyh-nav ${item.active ? "is-active" : ""}`}>
+                <i className="pokyh-nav-dot" />
+                {item.label}
+              </span>
+            ))}
+          </nav>
           <div className="pokyh-app-main">
             <div className="pokyh-app-header">
-              <span className="pv-line w30" />
+              <span className="pokyh-app-title">Week 28</span>
               <span className="pokyh-pill">Timetable</span>
             </div>
+            <div className="pokyh-days">
+              {WEEKDAYS.map((day) => (
+                <span key={day} className="pokyh-day mono">
+                  {day}
+                </span>
+              ))}
+            </div>
             <div className="pokyh-timetable">
-              {Array.from({ length: 20 }, (_, i) => (
+              {PERIODS.flat().map((subject, i) => (
                 <span
                   key={i}
-                  className={`pokyh-period ${TIMETABLE_ACCENTS.has(i) ? "is-accent" : ""}`}
-                />
+                  className={`pokyh-period ${PERIOD_ACCENTS.has(subject) ? "is-accent" : ""}`}
+                >
+                  {subject}
+                </span>
               ))}
             </div>
           </div>
@@ -45,6 +90,7 @@ export function PokyhMacScreens() {
       </div>
 
       <div className="pokyh-screen" data-screen="api">
+        <MacChrome title="POKYH — API" />
         <div className="pokyh-code mono">
           <p>
             <span className="tok-key">GET</span> /api/v1/timetable
@@ -57,10 +103,7 @@ export function PokyhMacScreens() {
             <span className="tok-key">&quot;week&quot;</span>: <span className="tok-val">28</span>,
           </p>
           <p>
-            <span className="tok-key">&quot;periods&quot;</span>: [ <span className="tok-dim">…</span> ],
-          </p>
-          <p>
-            <span className="tok-key">&quot;auth&quot;</span>: <span className="tok-val">&quot;bearer&quot;</span>
+            <span className="tok-key">&quot;auth&quot;</span>: <span className="tok-val">&quot;bearer · rate-limit ok&quot;</span>
           </p>
           <p className="tok-dim">{"}"}</p>
           <p className="tok-status">200 OK · 38ms</p>
@@ -68,6 +111,7 @@ export function PokyhMacScreens() {
       </div>
 
       <div className="pokyh-screen" data-screen="deploy">
+        <MacChrome title="POKYH — Deploy" />
         <div className="pokyh-code mono">
           <p>
             <span className="tok-key">$</span> docker compose up -d
@@ -76,7 +120,7 @@ export function PokyhMacScreens() {
           <p className="tok-dim">pokyh-api ......... running</p>
           <p className="tok-dim">pokyh-db .......... healthy</p>
           <p>
-            <span className="tok-key">$</span> cloudflared tunnel run
+            <span className="tok-key">$</span> ufw status · tls strict
           </p>
           <p className="tok-status">live at pokyh.plattnericus.dev</p>
         </div>
@@ -85,26 +129,38 @@ export function PokyhMacScreens() {
   );
 }
 
+const MESSAGES = [
+  { name: "Class 4B", preview: "Timetable changed for Friday", unread: true },
+  { name: "Mensa", preview: "Menu: pizza day", unread: false },
+  { name: "Admin", preview: "Grades are online now", unread: true },
+  { name: "Study group", preview: "Meet at 14:00?", unread: false },
+];
+
 export function PokyhPhoneScreen() {
   return (
     <div className="pokyh-phone-screen">
+      <div className="pokyh-status mono" aria-hidden="true">
+        <span>09:41</span>
+        <span className="pokyh-status-icons">
+          <i className="ps-signal" />
+          <i className="ps-wifi" />
+          <i className="ps-battery" />
+        </span>
+      </div>
       <p className="pokyh-phone-title">Messages</p>
-      <div className="pokyh-msg">
-        <span className="pokyh-avatar" />
-        <span className="pv-line w70" />
-      </div>
-      <div className="pokyh-msg">
-        <span className="pokyh-avatar" />
-        <span className="pv-line w50" />
-      </div>
-      <div className="pokyh-msg is-accent">
-        <span className="pokyh-avatar" />
-        <span className="pv-line w60" />
-      </div>
-      <div className="pokyh-msg">
-        <span className="pokyh-avatar" />
-        <span className="pv-line w80" />
-      </div>
+      <span className="pokyh-search" aria-hidden="true">
+        Search
+      </span>
+      {MESSAGES.map((message) => (
+        <div key={message.name} className={`pokyh-msg ${message.unread ? "is-accent" : ""}`}>
+          <span className="pokyh-avatar">{message.name.charAt(0)}</span>
+          <span className="pokyh-msg-body">
+            <span className="pokyh-msg-name">{message.name}</span>
+            <span className="pokyh-msg-preview">{message.preview}</span>
+          </span>
+          {message.unread ? <i className="pokyh-unread" aria-hidden="true" /> : null}
+        </div>
+      ))}
     </div>
   );
 }

@@ -136,7 +136,7 @@ function ProjectileVisual() {
         <rect x="66" y="200" width="16" height="16" rx="3" className="pv-block dim" />
         <rect x="316" y="200" width="16" height="16" rx="3" className="pv-block dim" />
         <path d="M66 184 Q 200 24 344 176" className="arc-path" />
-        <circle cx="344" cy="176" r="14" className="pv-reticle" />
+        <circle cx="344" cy="176" r="14" className="pv-reticle pv-reticle-pulse" />
         <line x1="344" y1="156" x2="344" y2="166" className="pv-reticle" />
         <line x1="344" y1="186" x2="344" y2="196" className="pv-reticle" />
         <line x1="324" y1="176" x2="334" y2="176" className="pv-reticle" />

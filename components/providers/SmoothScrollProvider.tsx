@@ -14,7 +14,9 @@ import {
 import Lenis from "lenis";
 import { gsap, ScrollTrigger } from "@/lib/animation";
 import AmbientBackground from "@/components/motion/AmbientBackground";
+import CursorGlow from "@/components/motion/CursorGlow";
 import DynamicFavicon from "@/components/motion/DynamicFavicon";
+import GooDefs from "@/components/motion/GooDefs";
 import ScrollProgress from "@/components/motion/ScrollProgress";
 
 type SmoothScrollContextValue = {
@@ -76,9 +78,11 @@ export default function SmoothScrollProvider({ children }: { children: ReactNode
 
   return (
     <SmoothScrollContext.Provider value={value}>
+      <GooDefs />
       <ScrollProgress />
       <AmbientBackground />
       <DynamicFavicon />
+      <CursorGlow />
       {children}
     </SmoothScrollContext.Provider>
   );

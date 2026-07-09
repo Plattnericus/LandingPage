@@ -39,9 +39,40 @@ export default function StreamDeckStory({ github }: { github: GithubSummary }) {
         /* resting states */
         gsap.set(".macdesk-window", { autoAlpha: 0, scale: 0.86, y: 30 });
         gsap.set(".macdesk-dock", { autoAlpha: 0, y: 18 });
+        gsap.set(".dock-icon", { autoAlpha: 0, scale: 0 });
         gsap.set(".win-row, .tool-tile", { autoAlpha: 0, x: -12 });
         gsap.set(".term-out", { autoAlpha: 0 });
         gsap.set(".sd-vignette", { autoAlpha: 0 });
+
+        /* idle motion while pinned: wallpaper breath + window hover-float */
+        const idle = [
+          gsap.to(".macdesk-wall", {
+            scale: 1.06,
+            duration: 9,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+          }),
+          ...gsap.utils.toArray<HTMLElement>(".macdesk-window", section).map((win, index) =>
+            gsap.to(win, {
+              yPercent: index % 2 ? -1.6 : 1.6,
+              duration: 2.6 + index * 0.7,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+              paused: true,
+            }),
+          ),
+          gsap.to(".tool-tile.is-accent", {
+            opacity: 0.5,
+            duration: 1.3,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            paused: true,
+          }),
+        ];
 
         const tl = gsap.timeline({
           defaults: { ease: "power3.out" },
@@ -54,6 +85,8 @@ export default function StreamDeckStory({ github }: { github: GithubSummary }) {
             pin: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
+            onToggle: (self) =>
+              idle.forEach((tween) => (self.isActive ? tween.play() : tween.pause())),
           },
         });
 
@@ -71,7 +104,12 @@ export default function StreamDeckStory({ github }: { github: GithubSummary }) {
         /* Tools window + dock */
         tl.to(".win-tools", { autoAlpha: 1, scale: 1, y: 0, duration: 0.7, ease: "back.out(1.25)" }, 2.7)
           .to(".win-tools .tool-tile", { autoAlpha: 1, x: 0, stagger: 0.09, duration: 0.4 }, 3.0)
-          .to(".macdesk-dock", { autoAlpha: 1, y: 0, duration: 0.6 }, 3.1);
+          .to(".macdesk-dock", { autoAlpha: 1, y: 0, duration: 0.6 }, 3.1)
+          .to(
+            ".dock-icon",
+            { autoAlpha: 1, scale: 1, stagger: 0.07, duration: 0.45, ease: "back.out(2.2)" },
+            3.25,
+          );
 
         /* Terminal types */
         tl.to(".win-terminal", { autoAlpha: 1, scale: 1, y: 0, duration: 0.7, ease: "back.out(1.25)" }, 4.1)

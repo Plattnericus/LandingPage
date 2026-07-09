@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { GitBranch, Globe, Mail } from "lucide-react";
 import AnimatedHeadline from "@/components/motion/AnimatedHeadline";
+import LiquidBlob from "@/components/motion/LiquidBlob";
 import MagneticButton from "@/components/motion/MagneticButton";
 import GithubStatsStrip from "@/components/ui/GithubStatsStrip";
 import { EASE, NO_MOTION_PREF, ScrollTrigger, gsap, useGSAP } from "@/lib/animation";
@@ -49,6 +50,7 @@ export default function ContactSection({ github }: { github: GithubSummary }) {
 
   return (
     <section ref={sectionRef} className="contact section" id="contact" aria-labelledby="contact-title">
+      <LiquidBlob className="liquid-contact" strength={0.18} />
       <div className="section-inner narrow contact-inner">
         <p className="eyebrow">Contact</p>
         <AnimatedHeadline as="h2" id="contact-title" className="section-title contact-title">
