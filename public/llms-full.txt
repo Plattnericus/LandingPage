@@ -34,8 +34,16 @@ Nexor / Plattnericus works across frontend, backend, infrastructure and deployme
 
 ### POKYH
 
+Live URL: https://pokyh.com
 Description: A school-focused platform built around real student workflows: timetable, grades, absences, messages, mobile app, backend, APIs and deployment.
 Technologies: Next.js, TypeScript, API, Docker, Cloudflare
+
+### ThreeJS Portfolio
+
+Live URL: https://threejs.plattnericus.dev
+Repository: https://github.com/Plattnericus/ThreeJS_Portfolio
+Description: An immersive 3D portfolio rendered in the browser: WebGL scenes, camera choreography and real-time lighting built with Three.js.
+Technologies: Three.js, WebGL, GLSL, JavaScript
 
 ### StreamDeck
 

@@ -826,11 +826,12 @@ a {
 }
 
 .orbit-name {
-  font-size: clamp(2.6rem, 4.4vw, 4.4rem);
-  line-height: 0.95;
+  font-size: clamp(2.2rem, 3.8vw, 3.9rem);
+  line-height: 0.98;
   letter-spacing: -0.045em;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 
 .orbit-desc {
@@ -1994,12 +1995,19 @@ a {
   gap: 0.8rem;
 }
 
+/* keep the whole browser frame inside the pinned viewport:
+   frame height ≈ width / 1.7 + bar, so capping width at 92svh
+   keeps it around 58svh and leaves room for the head */
+.streamdeck {
+  padding-block: clamp(2.5rem, 5vh, 4rem);
+}
+
 .sd-stage {
   position: relative;
 }
 
 .sd-browser {
-  width: min(100%, 1060px);
+  width: min(100%, 1060px, 86svh);
   margin-inline: auto;
   will-change: transform;
 }
@@ -2566,7 +2574,7 @@ a {
 /* ------------------------------------------------------------------ */
 
 .security {
-  min-height: 130svh;
+  min-height: 150svh;
   background: linear-gradient(180deg, var(--bg) 0%, var(--section) 55%, var(--bg) 100%);
 }
 
@@ -3143,4 +3151,154 @@ a {
   .future-strong {
     margin-top: clamp(2rem, 20vh, 26vh);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* ThreeJS portfolio visual (CSS 3D)                                   */
+/* ------------------------------------------------------------------ */
+
+.pv-threejs {
+  background:
+    radial-gradient(110% 120% at 50% 115%, rgba(221, 184, 146, 0.12) 0%, transparent 55%),
+    var(--bg-deep);
+}
+
+.pv-3d-grid {
+  position: absolute;
+  inset: 58% -24% -24%;
+  background-image:
+    linear-gradient(rgba(221, 184, 146, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(221, 184, 146, 0.16) 1px, transparent 1px);
+  background-size: 28px 28px;
+  transform: perspective(320px) rotateX(58deg);
+  transform-origin: 50% 0;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 85%);
+  opacity: 0.7;
+}
+
+.pv-3d-stage {
+  position: absolute;
+  inset: 0 0 12% 0;
+  display: grid;
+  place-items: center;
+  perspective: 640px;
+}
+
+.pv-cube {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  transform-style: preserve-3d;
+  transform: rotateX(-18deg) rotateY(32deg);
+}
+
+.pv-face {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(221, 184, 146, 0.72);
+  background: rgba(221, 184, 146, 0.05);
+}
+
+.pv-face-front {
+  transform: translateZ(48px);
+}
+
+.pv-face-back {
+  transform: rotateY(180deg) translateZ(48px);
+}
+
+.pv-face-left {
+  transform: rotateY(-90deg) translateZ(48px);
+}
+
+.pv-face-right {
+  transform: rotateY(90deg) translateZ(48px);
+}
+
+.pv-face-top {
+  transform: rotateX(90deg) translateZ(48px);
+}
+
+.pv-face-bottom {
+  transform: rotateX(-90deg) translateZ(48px);
+}
+
+.pv-3d-orb {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tan);
+  box-shadow: 0 0 18px rgba(221, 184, 146, 0.8);
+}
+
+.pv-3d-orb-a {
+  left: 22%;
+  top: 28%;
+}
+
+.pv-3d-orb-b {
+  right: 19%;
+  top: 52%;
+  width: 6px;
+  height: 6px;
+}
+
+.pv-3d-orb-c {
+  left: 32%;
+  bottom: 24%;
+  width: 7px;
+  height: 7px;
+}
+
+.pv-3d-hud {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  display: grid;
+  gap: 3px;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.pv-3d-hud-accent {
+  color: var(--tan);
+}
+
+/* ------------------------------------------------------------------ */
+/* Contact marquee                                                     */
+/* ------------------------------------------------------------------ */
+
+.contact {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.contact-marquee {
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: clamp(2rem, 6vh, 4.5rem);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.marquee-chunk {
+  display: flex;
+  white-space: nowrap;
+  font-size: clamp(2.2rem, 5.5vw, 4.4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: rgba(237, 224, 212, 0.13);
+}
+
+.marquee-chunk em {
+  font-style: normal;
+  color: rgba(221, 184, 146, 0.38);
 }

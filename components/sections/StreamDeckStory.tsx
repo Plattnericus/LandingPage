@@ -131,6 +131,8 @@ export default function StreamDeckStory({ github }: { github: GithubSummary }) {
           { scale: 1, y: 0, duration: 1.4, ease: "power2.out", immediateRender: false },
           0,
         )
+          .to(".sd-lead, .sd-meta", { autoAlpha: 0.4, y: -12, duration: 1.1, ease: "power1.inOut" }, 0.4)
+          .to(".sd-title", { autoAlpha: 0.85, scale: 0.94, transformOrigin: "0 50%", duration: 1.2, ease: "power1.inOut" }, 0.4)
           .to(".menu-item, .menu-glyph, .macdesk-clock", { autoAlpha: 1, y: 0, stagger: 0.06, duration: 0.4 }, 0.7)
           .to(".macdesk-dock", { autoAlpha: 1, y: 0, duration: 0.6 }, 1.0)
           .to(".dock-icon", { autoAlpha: 1, scale: 1, stagger: 0.07, duration: 0.45, ease: "back.out(2.2)" }, 1.1);

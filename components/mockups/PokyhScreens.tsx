@@ -122,7 +122,7 @@ export function PokyhMacScreens() {
           <p>
             <span className="tok-key">$</span> ufw status · tls strict
           </p>
-          <p className="tok-status">live at pokyh.plattnericus.dev</p>
+          <p className="tok-status">live at pokyh.com</p>
         </div>
       </div>
     </>

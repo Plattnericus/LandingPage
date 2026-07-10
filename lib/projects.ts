@@ -1,5 +1,6 @@
 export type ProjectVisualId =
   | "pokyh"
+  | "threejs"
   | "streamdeck"
   | "magic-mirror"
   | "minesweeper"
@@ -27,9 +28,21 @@ export const projects: Project[] = [
     description:
       "A school-focused platform built around real student workflows: timetable, grades, absences, messages, mobile app, backend, APIs and deployment.",
     tech: ["Next.js", "TypeScript", "API", "Docker", "Cloudflare"],
-    liveUrl: null,
+    liveUrl: "https://pokyh.com",
     githubUrl: null,
     visual: "pokyh",
+  },
+  {
+    name: "ThreeJS Portfolio",
+    slug: "threejs-portfolio",
+    repoName: "ThreeJS_Portfolio",
+    eyebrow: "3D web experience",
+    description:
+      "An immersive 3D portfolio rendered in the browser: WebGL scenes, camera choreography and real-time lighting built with Three.js.",
+    tech: ["Three.js", "WebGL", "GLSL", "JavaScript"],
+    liveUrl: "https://threejs.plattnericus.dev",
+    githubUrl: "https://github.com/Plattnericus/ThreeJS_Portfolio",
+    visual: "threejs",
   },
   {
     name: "StreamDeck",
@@ -64,7 +77,7 @@ export const projects: Project[] = [
       "The classic logic game rebuilt from scratch: clean grid state, flood reveals, flagging and a focused minimal interface.",
     tech: ["Game Logic", "Grid Algorithms", "UI"],
     liveUrl: null,
-    githubUrl: null,
+    githubUrl: "https://github.com/Plattnericus",
     visual: "minesweeper",
   },
   {

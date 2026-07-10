@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { Code2, Database, Globe, Hammer, Workflow } from "lucide-react";
 import AnimatedHeadline from "@/components/motion/AnimatedHeadline";
-import { EASE, MM_DESKTOP, NO_MOTION_PREF, gsap, useGSAP } from "@/lib/animation";
+import { EASE, MM_DESKTOP, MM_MOBILE, PIN, gsap, useGSAP } from "@/lib/animation";
 import { techGroups } from "@/lib/content";
 
 const GROUP_ICONS = [Code2, Globe, Database, Workflow, Hammer];
@@ -17,43 +17,74 @@ export default function TechStackSection() {
       if (!section) return;
       const mm = gsap.matchMedia();
 
-      mm.add(NO_MOTION_PREF, () => {
+      mm.add({ desktop: MM_DESKTOP, mobile: MM_MOBILE }, (ctx) => {
+        const isDesktop = Boolean(ctx.conditions?.desktop);
         const rows = gsap.utils.toArray<HTMLElement>(".tech-row", section);
 
-        rows.forEach((row) => {
-          gsap.from(row, {
-            autoAlpha: 0,
-            y: 48,
-            duration: 0.9,
-            ease: EASE.soft,
-            scrollTrigger: { trigger: row, start: "top 82%" },
+        if (!isDesktop) {
+          rows.forEach((row) => {
+            gsap.from(row, {
+              autoAlpha: 0,
+              y: 48,
+              duration: 0.9,
+              ease: EASE.soft,
+              scrollTrigger: { trigger: row, start: "top 82%" },
+            });
+            gsap.from(row.querySelectorAll(".tag"), {
+              autoAlpha: 0,
+              y: 14,
+              stagger: 0.045,
+              duration: 0.5,
+              ease: EASE.soft,
+              scrollTrigger: { trigger: row, start: "top 78%" },
+            });
           });
-          gsap.from(row.querySelectorAll(".tag"), {
-            autoAlpha: 0,
-            y: 14,
-            stagger: 0.045,
-            duration: 0.5,
-            ease: EASE.soft,
-            scrollTrigger: { trigger: row, start: "top 78%" },
-          });
+          return;
+        }
+
+        /* pinned cascade: every group slides in, holds focus, then hands
+           it to the next one — no more racing through the stack */
+        gsap.set(rows, { autoAlpha: 0, y: 54 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: "power3.out" },
+          scrollTrigger: {
+            id: "tech",
+            trigger: section,
+            start: "top top",
+            end: `+=${PIN.tech}`,
+            scrub: 1,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
         });
-      });
 
-      /* gentle differential drift + hover wave, desktop only */
-      mm.add(MM_DESKTOP, () => {
-        const rows = gsap.utils.toArray<HTMLElement>(".tech-row", section);
-        const cleanups: Array<() => void> = [];
         rows.forEach((row, index) => {
-          gsap.to(row, {
-            y: index % 2 ? -34 : -12,
-            ease: "none",
-            scrollTrigger: {
-              trigger: section,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 1.2,
-            },
-          });
+          const at = 0.4 + index * 2.0;
+          tl.to(row, { autoAlpha: 1, y: 0, duration: 0.7 }, at)
+            .fromTo(
+              row.querySelector(".tech-label svg"),
+              { rotation: -90, scale: 0.4, autoAlpha: 0 },
+              { rotation: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "back.out(2)", immediateRender: false },
+              at + 0.1,
+            )
+            .fromTo(
+              row.querySelectorAll(".tag"),
+              { autoAlpha: 0, y: 16, scale: 0.9 },
+              { autoAlpha: 1, y: 0, scale: 1, stagger: 0.06, duration: 0.4, ease: "back.out(1.6)", immediateRender: false },
+              at + 0.2,
+            );
+          if (index > 0) {
+            tl.to(rows[index - 1], { autoAlpha: 0.55, duration: 0.6, ease: "power1.inOut" }, at);
+          }
+        });
+        /* settle: the whole stack lights back up before the pin releases */
+        tl.to(rows, { autoAlpha: 1, duration: 0.9, ease: "power1.inOut" }, "+=0.5").to({}, { duration: 0.8 });
+
+        /* hover wave stays interactive while pinned */
+        const cleanups: Array<() => void> = [];
+        rows.forEach((row) => {
           const onEnter = () => {
             gsap.fromTo(
               row.querySelectorAll(".tag"),

@@ -1,9 +1,15 @@
 {
+  "id": "/",
   "name": "Nexor / Plattnericus",
   "short_name": "Nexor",
-  "description": "Premium developer landing page for Nexor / Plattnericus.",
+  "description": "Nexor / Plattnericus builds real fullstack projects, interactive web experiences, DevOps infrastructure and security-focused systems.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["technology", "development", "portfolio"],
   "background_color": "#17100c",
   "theme_color": "#17100c",
   "icons": [

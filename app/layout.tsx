@@ -17,6 +17,17 @@ export const metadata: Metadata = {
   creator: "Nexor / Plattnericus",
   publisher: "Nexor / Plattnericus",
   category: "technology",
+  referrer: "origin-when-cross-origin",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: siteConfig.shortName,
+  },
   alternates: {
     canonical: "/",
     languages: {

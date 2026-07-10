@@ -66,11 +66,11 @@ export default function IntroReveal() {
           { scaleX: 1, duration: 0.7, ease: EASE.inOut },
           0.6,
         )
-        /* hold the mark a beat longer with a slow breathing glow */
-        .to(".intro-logo", { scale: 1.035, duration: 1.15, ease: "sine.inOut" }, 1.15)
-        .to(".intro-glow", { scale: 1.18, duration: 1.15, ease: "sine.inOut" }, 1.15)
-        .add(completeIntro, 2.1)
-        .to(root, { autoAlpha: 0, duration: 0.55, ease: EASE.inOut }, 2.15);
+        /* hold the mark a beat with a slow breathing glow, then hand off */
+        .to(".intro-logo", { scale: 1.035, duration: 0.85, ease: "sine.inOut" }, 1.1)
+        .to(".intro-glow", { scale: 1.18, duration: 0.85, ease: "sine.inOut" }, 1.1)
+        .add(completeIntro, 1.85)
+        .to(root, { autoAlpha: 0, duration: 0.5, ease: EASE.inOut }, 1.9);
 
       return release;
     },

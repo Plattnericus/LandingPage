@@ -113,6 +113,28 @@ function createAmbient(item: HTMLElement): gsap.core.Tween[] {
     yoyo: true,
     repeat: -1,
   });
+  add(q(".pv-cube"), {
+    rotationY: "+=360",
+    duration: 10,
+    ease: "none",
+    repeat: -1,
+  });
+  q(".pv-3d-orb").forEach((orb, index) =>
+    add([orb], {
+      y: index % 2 ? 9 : -9,
+      duration: 1.9 + index * 0.5,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+    }),
+  );
+  add(q(".pv-3d-hud-accent"), {
+    opacity: 0.45,
+    duration: 1.2,
+    ease: "sine.inOut",
+    yoyo: true,
+    repeat: -1,
+  });
   add(q(".arc-path"), {
     strokeDashoffset: -130,
     duration: 3.2,

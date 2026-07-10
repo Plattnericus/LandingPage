@@ -42,26 +42,28 @@ export default function FutureVision() {
           0.2,
         );
 
-        const wordSplits = words.map((word) => SplitText.create(word, { type: "chars" }));
+        /* same clean masked roll as the hero: rise from the mask, dwell,
+           roll up and away — no rotation, no scatter */
+        const wordSplits = words.map((word) =>
+          SplitText.create(word, { type: "chars", mask: "chars" }),
+        );
         words.forEach((word, index) => {
           const chars = wordSplits[index].chars;
           /* wide spacing = every word gets a proper hold while pinned */
           const at = 1.5 + index * 3.3;
           tl.fromTo(
             word,
-            { autoAlpha: 0, y: 36 },
-            { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out", immediateRender: false },
+            { autoAlpha: 0 },
+            { autoAlpha: 1, duration: 0.25, ease: "none", immediateRender: false },
             at,
           ).fromTo(
             chars,
-            { yPercent: 80, rotationX: -88, autoAlpha: 0 },
+            { yPercent: 110 },
             {
               yPercent: 0,
-              rotationX: 0,
-              autoAlpha: 1,
-              duration: 0.8,
-              stagger: 0.035,
-              ease: "power2.out",
+              duration: 0.7,
+              stagger: 0.03,
+              ease: "power4.out",
               immediateRender: false,
             },
             at,
@@ -70,19 +72,17 @@ export default function FutureVision() {
             tl.to(
               chars,
               {
-                yPercent: -80,
-                rotationX: 88,
-                autoAlpha: 0,
-                duration: 0.7,
-                stagger: { each: 0.03, from: "end" },
-                ease: "power2.in",
+                yPercent: -110,
+                duration: 0.55,
+                stagger: 0.026,
+                ease: "power3.in",
               },
               at + 2.6,
-            ).to(word, { autoAlpha: 0, y: -36, duration: 0.35, ease: "power2.in" }, at + 3.1);
+            ).to(word, { autoAlpha: 0, duration: 0.2, ease: "none" }, at + 3.1);
           } else {
             tl.to(
               word,
-              { autoAlpha: 0.14, scale: 1.6, duration: 1.4, ease: "power2.inOut" },
+              { autoAlpha: 0.18, scale: 1.18, duration: 1.4, ease: "power2.inOut" },
               at + 2.8,
             );
           }

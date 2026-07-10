@@ -20,6 +20,26 @@ export default function ContactSection({ github }: { github: GithubSummary }) {
       const mm = gsap.matchMedia();
 
       mm.add(NO_MOTION_PREF, () => {
+        /* endless display marquee; slows down under the pointer */
+        const marquee = gsap.to(".marquee-track", {
+          xPercent: -50,
+          duration: 26,
+          ease: "none",
+          repeat: -1,
+          paused: true,
+        });
+        ScrollTrigger.create({
+          trigger: ".contact-marquee",
+          start: "top bottom",
+          end: "bottom top",
+          onToggle: (self) => (self.isActive ? marquee.play() : marquee.pause()),
+        });
+        const marqueeEl = section.querySelector<HTMLElement>(".contact-marquee");
+        const slow = () => gsap.to(marquee, { timeScale: 0.18, duration: 0.5, overwrite: "auto" });
+        const fast = () => gsap.to(marquee, { timeScale: 1, duration: 0.7, overwrite: "auto" });
+        marqueeEl?.addEventListener("pointerenter", slow);
+        marqueeEl?.addEventListener("pointerleave", fast);
+
         gsap.from(".contact-lead, .contact-actions, .contact-footer", {
           autoAlpha: 0,
           y: 30,
@@ -43,6 +63,11 @@ export default function ContactSection({ github }: { github: GithubSummary }) {
           start: "top 80%",
           onToggle: (self) => (self.isActive ? pulse.play() : pulse.pause()),
         });
+
+        return () => {
+          marqueeEl?.removeEventListener("pointerenter", slow);
+          marqueeEl?.removeEventListener("pointerleave", fast);
+        };
       });
     },
     { scope: sectionRef },
@@ -51,6 +76,20 @@ export default function ContactSection({ github }: { github: GithubSummary }) {
   return (
     <section ref={sectionRef} className="contact section" id="contact" aria-labelledby="contact-title">
       <LiquidBlob className="liquid-contact" strength={0.18} />
+      <div className="contact-marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[0, 1].map((half) => (
+            <span key={half} className="marquee-chunk">
+              {[0, 1, 2].map((i) => (
+                <span key={i}>
+                  Build. Deploy. <em>Secure.</em>
+                  {" Repeat. — "}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
       <div className="section-inner narrow contact-inner">
         <p className="eyebrow">Contact</p>
         <AnimatedHeadline as="h2" id="contact-title" className="section-title contact-title">

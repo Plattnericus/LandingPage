@@ -49,6 +49,31 @@ function PokyhVisual() {
   );
 }
 
+function ThreejsVisual() {
+  return (
+    <div className="pv pv-threejs">
+      <span className="pv-3d-grid" aria-hidden="true" />
+      <div className="pv-3d-stage">
+        <div className="pv-cube">
+          <span className="pv-face pv-face-front" />
+          <span className="pv-face pv-face-back" />
+          <span className="pv-face pv-face-left" />
+          <span className="pv-face pv-face-right" />
+          <span className="pv-face pv-face-top" />
+          <span className="pv-face pv-face-bottom" />
+        </div>
+        <span className="pv-3d-orb pv-3d-orb-a" />
+        <span className="pv-3d-orb pv-3d-orb-b" />
+        <span className="pv-3d-orb pv-3d-orb-c" />
+      </div>
+      <div className="pv-3d-hud mono">
+        <span>scene · portfolio</span>
+        <span className="pv-3d-hud-accent">60 fps · webgl2</span>
+      </div>
+    </div>
+  );
+}
+
 function StreamdeckVisual() {
   return (
     <div className="pv pv-streamdeck">
@@ -150,6 +175,8 @@ export default function ProjectVisual({ id }: { id: ProjectVisualId }) {
   switch (id) {
     case "pokyh":
       return <PokyhVisual />;
+    case "threejs":
+      return <ThreejsVisual />;
     case "streamdeck":
       return <StreamdeckVisual />;
     case "magic-mirror":

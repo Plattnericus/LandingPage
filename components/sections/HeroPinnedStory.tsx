@@ -229,30 +229,31 @@ export default function HeroPinnedStory() {
             0,
           );
 
-        /* crisp per-char keynote cascade for Build. / Deploy. / Secure. —
-           each word holds on screen for a long dwell before it leaves */
-        const wordSplits = words.map((word) => SplitText.create(word, { type: "chars" }));
+        /* clean masked roll for Build. / Deploy. / Secure. — chars rise out
+           of a clipping mask, hold their dwell, then roll up and away.
+           No rotation, no scatter: one crisp line per word. */
+        const wordSplits = words.map((word) =>
+          SplitText.create(word, { type: "chars", mask: "chars" }),
+        );
         const glowByWord = [".hero-glow-tan", ".hero-glow-sand", ".hero-glow-copper"];
         words.forEach((word, index) => {
           const chars = wordSplits[index].chars;
-          const at = 2.4 + index * 4.3;
+          const at = 2.4 + index * 3.7;
           pinTl
             .fromTo(
               word,
-              { autoAlpha: 0, y: 40 },
-              { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", immediateRender: false },
+              { autoAlpha: 0 },
+              { autoAlpha: 1, duration: 0.25, ease: "none", immediateRender: false },
               at,
             )
             .fromTo(
               chars,
-              { yPercent: 85, rotationX: -90, autoAlpha: 0 },
+              { yPercent: 110 },
               {
                 yPercent: 0,
-                rotationX: 0,
-                autoAlpha: 1,
-                duration: 0.9,
-                stagger: 0.05,
-                ease: "power2.out",
+                duration: 0.8,
+                stagger: 0.035,
+                ease: "power4.out",
                 immediateRender: false,
               },
               at,
@@ -276,19 +277,17 @@ export default function HeroPinnedStory() {
               .to(
                 chars,
                 {
-                  yPercent: -85,
-                  rotationX: 90,
-                  autoAlpha: 0,
-                  duration: 0.8,
-                  stagger: { each: 0.04, from: "end" },
-                  ease: "power2.in",
+                  yPercent: -110,
+                  duration: 0.6,
+                  stagger: 0.03,
+                  ease: "power3.in",
                 },
-                at + 3.4,
+                at + 2.9,
               )
-              .to(word, { autoAlpha: 0, y: -40, duration: 0.4, ease: "power2.in" }, at + 4.0);
+              .to(word, { autoAlpha: 0, duration: 0.2, ease: "none" }, at + 3.5);
           }
         });
-        pinTl.to({}, { duration: 2.2 });
+        pinTl.to({}, { duration: 1.8 });
 
         return () => {
           entranceRef.current = null;

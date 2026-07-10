@@ -14,6 +14,9 @@ import { getGithubSummary } from "@/lib/github";
 import { projects } from "@/lib/projects";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
+/* build date keeps dateModified honest without manual bumps */
+const buildDate = new Date().toISOString().slice(0, 10);
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -34,7 +37,10 @@ const jsonLd = {
         width: 1200,
         height: 630,
       },
-      dateModified: "2026-07-09",
+      dateModified: buildDate,
+      breadcrumb: {
+        "@id": `${siteConfig.url}#breadcrumbs`,
+      },
       about: {
         "@id": `${siteConfig.url}#person`,
       },
@@ -52,6 +58,10 @@ const jsonLd = {
         ...projects.flatMap((project) => (project.liveUrl ? [project.liveUrl] : [])),
       ],
       jobTitle: "Fullstack Developer",
+      homeLocation: {
+        "@type": "Place",
+        name: "South Tyrol, Italy",
+      },
       hasOccupation: {
         "@type": "Occupation",
         name: "Fullstack Developer",
@@ -144,6 +154,14 @@ const jsonLd = {
           keywords: project.tech.join(", "),
         },
       })),
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${siteConfig.url}#breadcrumbs`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: siteConfig.url },
+        { "@type": "ListItem", position: 2, name: "AI Index", item: absoluteUrl("/ai") },
+      ],
     },
   ],
 };

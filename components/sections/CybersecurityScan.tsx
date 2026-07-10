@@ -73,19 +73,23 @@ export default function CybersecurityScan() {
           scrollTrigger: { trigger: ".radar", start: "top 55%" },
         });
 
-        /* checklist ticks one by one while scrolling */
+        /* checklist ticks one by one over a long scroll span — each topic
+           gets its own beat instead of the list flashing through */
         gsap.utils.toArray<HTMLElement>(".sec-topic", section).forEach((topic, index) => {
           const check = topic.querySelector(".check-path");
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: ".security-list",
-              start: `top+=${index * 34} 72%`,
-              end: `top+=${index * 34 + 90} 46%`,
+              start: `top+=${index * 52} 78%`,
+              end: `top+=${index * 52 + 130} 42%`,
               scrub: 1,
             },
           });
-          tl.fromTo(topic, { x: -14, autoAlpha: 0.35 }, { x: 0, autoAlpha: 1, duration: 0.4, immediateRender: false })
-            .to(topic, { color: "var(--text)", duration: 0.3 }, 0.1);
+          tl.fromTo(
+            topic,
+            { x: -18, autoAlpha: 0.3, scale: 0.985 },
+            { x: 0, autoAlpha: 1, scale: 1, duration: 0.4, immediateRender: false },
+          ).to(topic, { color: "var(--text)", duration: 0.3 }, 0.1);
           if (check) {
             tl.fromTo(
               check,

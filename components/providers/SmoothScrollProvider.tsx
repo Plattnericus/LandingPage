@@ -56,7 +56,17 @@ export default function SmoothScrollProvider({ children }: { children: ReactNode
     });
     lenisRef.current = lenis;
 
-    lenis.on("scroll", () => ScrollTrigger.update());
+    /* scroll-velocity skew on section content — the melt only lives on
+       inner wrappers so it can never break position-fixed pinning */
+    const skewSetters = gsap.utils
+      .toArray<HTMLElement>("main .section-inner")
+      .map((el) => gsap.quickTo(el, "skewY", { duration: 0.55, ease: "power3.out" }));
+    lenis.on("scroll", (instance: Lenis) => {
+      ScrollTrigger.update();
+      const raw = gsap.utils.clamp(-0.4, 0.4, instance.velocity * 0.006);
+      const skew = Math.abs(raw) < 0.02 ? 0 : raw;
+      skewSetters.forEach((setSkew) => setSkew(skew));
+    });
     const tick = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);

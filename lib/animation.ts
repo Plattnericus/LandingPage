@@ -42,19 +42,20 @@ export const EASE = {
 
 /** Pin distances (px of scroll); longer pins buy real dwell time per beat. */
 export const PIN = {
-  hero: 3200,
-  heroMobile: 1600,
+  hero: 2900,
+  heroMobile: 1450,
   pokyh: 3200,
   streamdeck: 4600,
   devops: 2600,
+  tech: 2200,
   future: 3000,
 } as const;
 
-/** Orbit project carousel: 5 items, 4 steps around the half circle. */
+/** Orbit project carousel: 6 items, 5 steps around the half circle. */
 export const ORBIT = {
-  stepDeg: 44,
-  steps: 4,
-  pin: 4800,
+  stepDeg: 36,
+  steps: 5,
+  pin: 5600,
 } as const;
 
 export const BP_DESKTOP = "(min-width: 900px)";

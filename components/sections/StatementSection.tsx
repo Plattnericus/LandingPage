@@ -35,9 +35,10 @@ export default function StatementSection() {
         if (bodySplit) {
           gsap.fromTo(
             bodySplit.words,
-            { opacity: 0.22 },
+            { opacity: 0.22, yPercent: 14 },
             {
               opacity: 1,
+              yPercent: 0,
               stagger: 0.06,
               ease: "none",
               immediateRender: false,
