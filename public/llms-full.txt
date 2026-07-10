@@ -64,7 +64,8 @@ Technologies: game logic, grid algorithms, UI
 
 ### ProjectilePreview-Mod
 
-Description: A game mod that renders the predicted flight path of projectiles in real time, directly inside the game world.
+Modrinth: https://modrinth.com/mod/projectile.preview
+Description: A Minecraft mod that renders the predicted flight path of projectiles in real time, directly inside the game world.
 Technologies: Java, modding, physics
 
 ## Search And AI Discovery Files

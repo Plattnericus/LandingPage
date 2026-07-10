@@ -37,7 +37,7 @@ Showcased projects:
 - StreamDeck: interactive browser desktop inspired by macOS, live at https://streamdeck.plattnericus.dev/desktop
 - Magic-Mirror: selfhosted smart display on a Raspberry Pi
 - Minesweeper: the classic logic game rebuilt from scratch
-- ProjectilePreview-Mod: game mod rendering predicted projectile flight paths in real time
+- ProjectilePreview-Mod: Minecraft mod rendering predicted projectile flight paths in real time, on Modrinth at https://modrinth.com/mod/projectile.preview
 
 Repository profile:
 https://github.com/Plattnericus
