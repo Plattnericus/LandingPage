@@ -45,29 +45,32 @@ export default function IntroReveal() {
       tl.fromTo(
         ".intro-glow",
         { autoAlpha: 0, scale: 0.85 },
-        { autoAlpha: 1, scale: 1.08, duration: 1.0, ease: EASE.soft },
+        { autoAlpha: 1, scale: 1.08, duration: 1.2, ease: EASE.soft },
         0.05,
       )
         .fromTo(
           ".intro-domain",
           { autoAlpha: 0, y: 14, filter: "blur(18px)" },
-          { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: EASE.out },
+          { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.6, ease: EASE.out },
           0,
         )
         .fromTo(
           ".intro-logo",
           { autoAlpha: 0, scale: 0.94, filter: "blur(24px)" },
-          { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.75, ease: EASE.out },
-          0.2,
+          { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.85, ease: EASE.out },
+          0.25,
         )
         .fromTo(
           ".intro-line",
           { scaleX: 0 },
-          { scaleX: 1, duration: 0.55, ease: EASE.inOut },
-          0.5,
+          { scaleX: 1, duration: 0.7, ease: EASE.inOut },
+          0.6,
         )
-        .add(completeIntro, 1.02)
-        .to(root, { autoAlpha: 0, duration: 0.45, ease: EASE.inOut }, 1.05);
+        /* hold the mark a beat longer with a slow breathing glow */
+        .to(".intro-logo", { scale: 1.035, duration: 1.15, ease: "sine.inOut" }, 1.15)
+        .to(".intro-glow", { scale: 1.18, duration: 1.15, ease: "sine.inOut" }, 1.15)
+        .add(completeIntro, 2.1)
+        .to(root, { autoAlpha: 0, duration: 0.55, ease: EASE.inOut }, 2.15);
 
       return release;
     },

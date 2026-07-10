@@ -102,7 +102,13 @@ export default function HeroPinnedStory() {
             1.62,
           );
         entranceRef.current = entrance;
-        if (introDoneRef.current) entrance.play(0);
+        if (!isDesktop) {
+          /* mobile: play right away under the intro overlay — no handoff race */
+          entrance.play();
+        } else if (introDoneRef.current) {
+          /* context rebuilt after the intro already finished → land on end state */
+          entrance.progress(1);
+        }
 
         /* char hover jiggle (desktop pointers) */
         const charCleanups: Array<() => void> = [];
@@ -223,24 +229,34 @@ export default function HeroPinnedStory() {
             0,
           );
 
+        /* crisp per-char keynote cascade for Build. / Deploy. / Secure. —
+           each word holds on screen for a long dwell before it leaves */
+        const wordSplits = words.map((word) => SplitText.create(word, { type: "chars" }));
         const glowByWord = [".hero-glow-tan", ".hero-glow-sand", ".hero-glow-copper"];
         words.forEach((word, index) => {
-          const at = 2.4 + index * 2.9;
-          pinTl.fromTo(
-            word,
-            { autoAlpha: 0, y: 90, rotationX: 42, transformPerspective: 720, filter: "blur(16px)" },
-            {
-              autoAlpha: 1,
-              y: 0,
-              rotationX: 0,
-              filter: "blur(0px)",
-              textShadow: "0 0 70px rgba(230, 204, 178, 0.4)",
-              duration: 1.1,
-              ease: "power2.out",
-              immediateRender: false,
-            },
-            at,
-          );
+          const chars = wordSplits[index].chars;
+          const at = 2.4 + index * 4.3;
+          pinTl
+            .fromTo(
+              word,
+              { autoAlpha: 0, y: 40 },
+              { autoAlpha: 1, y: 0, duration: 0.6, ease: "power2.out", immediateRender: false },
+              at,
+            )
+            .fromTo(
+              chars,
+              { yPercent: 85, rotationX: -90, autoAlpha: 0 },
+              {
+                yPercent: 0,
+                rotationX: 0,
+                autoAlpha: 1,
+                duration: 0.9,
+                stagger: 0.05,
+                ease: "power2.out",
+                immediateRender: false,
+              },
+              at,
+            );
           if (index > 0) {
             pinTl.fromTo(
               glowByWord[index - 1],
@@ -256,27 +272,28 @@ export default function HeroPinnedStory() {
             );
           }
           if (index < words.length - 1) {
-            /* overlaps the next word's entrance — with the goo filter the
-               two words melt through each other (iOS liquid feel) */
-            pinTl.to(
-              word,
-              {
-                autoAlpha: 0,
-                y: -90,
-                rotationX: -38,
-                filter: "blur(16px)",
-                duration: 1.3,
-                ease: "power2.in",
-              },
-              at + 1.9,
-            );
+            pinTl
+              .to(
+                chars,
+                {
+                  yPercent: -85,
+                  rotationX: 90,
+                  autoAlpha: 0,
+                  duration: 0.8,
+                  stagger: { each: 0.04, from: "end" },
+                  ease: "power2.in",
+                },
+                at + 3.4,
+              )
+              .to(word, { autoAlpha: 0, y: -40, duration: 0.4, ease: "power2.in" }, at + 4.0);
           }
         });
-        pinTl.to({}, { duration: 1.6 });
+        pinTl.to({}, { duration: 2.2 });
 
         return () => {
           entranceRef.current = null;
           charCleanups.forEach((cleanup) => cleanup());
+          wordSplits.forEach((wordSplit) => wordSplit.revert());
           split.revert();
         };
       });
@@ -286,7 +303,17 @@ export default function HeroPinnedStory() {
 
   useEffect(() => {
     introDoneRef.current = introDone;
-    if (introDone) entranceRef.current?.play();
+    if (!introDone) return;
+    entranceRef.current?.play();
+    /* fail-safe: never leave the hero half-hidden if the timeline got
+       interrupted (context re-init, tab switch, …) */
+    const guard = gsap.delayedCall(3, () => {
+      const timeline = entranceRef.current;
+      if (timeline && timeline.progress() < 1 && !timeline.isActive()) timeline.progress(1);
+    });
+    return () => {
+      guard.kill();
+    };
   }, [introDone]);
 
   return (

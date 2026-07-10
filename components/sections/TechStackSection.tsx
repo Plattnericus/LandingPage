@@ -39,9 +39,10 @@ export default function TechStackSection() {
         });
       });
 
-      /* gentle differential drift, desktop only */
+      /* gentle differential drift + hover wave, desktop only */
       mm.add(MM_DESKTOP, () => {
         const rows = gsap.utils.toArray<HTMLElement>(".tech-row", section);
+        const cleanups: Array<() => void> = [];
         rows.forEach((row, index) => {
           gsap.to(row, {
             y: index % 2 ? -34 : -12,
@@ -53,7 +54,25 @@ export default function TechStackSection() {
               scrub: 1.2,
             },
           });
+          const onEnter = () => {
+            gsap.fromTo(
+              row.querySelectorAll(".tag"),
+              { y: 0 },
+              {
+                y: -8,
+                duration: 0.2,
+                stagger: 0.028,
+                yoyo: true,
+                repeat: 1,
+                ease: "power2.out",
+                overwrite: "auto",
+              },
+            );
+          };
+          row.addEventListener("pointerenter", onEnter);
+          cleanups.push(() => row.removeEventListener("pointerenter", onEnter));
         });
+        return () => cleanups.forEach((cleanup) => cleanup());
       });
     },
     { scope: sectionRef },

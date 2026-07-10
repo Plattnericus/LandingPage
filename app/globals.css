@@ -115,6 +115,7 @@ a {
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
+  perspective: 720px;
 }
 
 .strong-line {
@@ -282,21 +283,6 @@ a {
   filter: blur(9px);
 }
 
-.goo-defs {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-/* iOS-style liquid text morph: overlapping display words melt together */
-@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
-  .hero-words,
-  .future-words {
-    filter: url(#goo-words);
-  }
-}
-
 /* Cursor accent */
 .cursor-layer {
   pointer-events: none;
@@ -381,6 +367,35 @@ a {
   background: var(--sand);
   border-color: var(--sand);
   color: var(--ink);
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 32%,
+    rgba(255, 251, 246, 0.55) 50%,
+    transparent 68%
+  );
+  transform: translateX(-130%);
+  animation: btn-shine 4.6s ease-in-out infinite 1.4s;
+  pointer-events: none;
+}
+
+@keyframes btn-shine {
+  0%,
+  58% {
+    transform: translateX(-130%);
+  }
+
+  78%,
+  100% {
+    transform: translateX(130%);
+  }
 }
 
 .btn-primary:hover {
@@ -790,19 +805,6 @@ a {
   border-radius: 20px;
   box-shadow: 0 60px 130px -55px rgba(0, 0, 0, 0.9);
   will-change: transform;
-}
-
-.orbit-apex {
-  position: absolute;
-  left: calc(var(--orbit-d) * 0.58);
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  margin: -5px 0 0 -5px;
-  border-radius: 50%;
-  background: var(--sand);
-  box-shadow: 0 0 20px var(--glow);
-  pointer-events: none;
 }
 
 .orbit-copy {
@@ -1565,12 +1567,13 @@ a {
 }
 
 .system-map .map-vps {
-  fill: rgba(36, 24, 18, 0.6);
-  stroke: rgba(221, 184, 146, 0.4);
+  fill: rgba(30, 20, 15, 0.92);
+  stroke: rgba(221, 184, 146, 0.45);
 }
 
 .system-map .map-container {
-  fill: rgba(23, 16, 12, 0.9);
+  fill: rgba(15, 11, 9, 0.96);
+  stroke: rgba(237, 224, 212, 0.4);
 }
 
 .system-map .map-label {
@@ -2069,16 +2072,16 @@ a {
 }
 
 .win-files {
-  left: 6%;
-  top: 15%;
-  width: 42%;
-  min-height: 38%;
+  left: 4%;
+  top: 14%;
+  width: 34%;
+  min-height: 36%;
 }
 
 .win-tools {
-  right: 7%;
-  top: 24%;
-  width: 33%;
+  left: 3.5%;
+  bottom: 15%;
+  width: 24%;
 }
 
 .win-tools-grid {
@@ -2096,14 +2099,14 @@ a {
 }
 
 .win-terminal {
-  left: 24%;
-  bottom: 13%;
-  width: 46%;
+  left: 32%;
+  bottom: 11%;
+  width: 42%;
 }
 
 .win-terminal .win-body {
   gap: 7px;
-  min-height: 74px;
+  min-height: 96px;
 }
 
 .term-line {
@@ -2156,6 +2159,7 @@ a {
 }
 
 .dock-icon {
+  position: relative;
   display: grid;
   place-items: center;
   width: 30px;
@@ -2163,6 +2167,18 @@ a {
   border-radius: 9px;
   background: rgba(237, 224, 212, 0.08);
   color: var(--muted);
+}
+
+.dock-dot {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: var(--tan);
+  opacity: 0;
 }
 
 .dock-icon svg {
@@ -2177,6 +2193,257 @@ a {
   pointer-events: none;
   opacity: 0;
   z-index: 5;
+}
+
+/* menubar detail */
+.menu-left,
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-item {
+  color: rgba(237, 224, 212, 0.55);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+}
+
+.menu-glyph {
+  width: 11px;
+  height: 11px;
+  color: rgba(237, 224, 212, 0.6);
+}
+
+/* live preview window: page skeleton that builds itself */
+.win-preview {
+  right: 4%;
+  top: 12%;
+  width: 46%;
+  min-height: 46%;
+}
+
+.win-preview-body {
+  gap: 9px;
+}
+
+.pv-nav {
+  height: 9px;
+  border-radius: 5px;
+  background: rgba(237, 224, 212, 0.14);
+}
+
+.pv-heroblock {
+  height: 58px;
+  border-radius: 7px;
+  background: linear-gradient(120deg, rgba(221, 184, 146, 0.32), rgba(127, 85, 57, 0.25));
+}
+
+.pv-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pv-card {
+  height: 34px;
+  border-radius: 6px;
+  background: rgba(237, 224, 212, 0.09);
+}
+
+/* now-playing widget */
+.win-music {
+  right: 5%;
+  bottom: 14%;
+  width: 24%;
+}
+
+.win-music .win-body {
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.music-art {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(221, 184, 146, 0.45), rgba(127, 85, 57, 0.4));
+  color: var(--text);
+}
+
+.music-art svg {
+  width: 15px;
+  height: 15px;
+}
+
+.music-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.music-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 16px;
+}
+
+.eq-bar {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--tan);
+  transform-origin: 50% 100%;
+}
+
+.eq-bar:nth-child(2n) {
+  height: 70%;
+}
+
+.eq-bar:nth-child(3n) {
+  height: 85%;
+}
+
+.music-progress {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(237, 224, 212, 0.12);
+  overflow: hidden;
+}
+
+.music-progress-fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--sand);
+  transform-origin: 0 50%;
+}
+
+/* spotlight overlay (⌘ space) */
+.macdesk-spotlight {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: min(46%, 340px);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(237, 224, 212, 0.18);
+  background: rgba(23, 16, 12, 0.78);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.9);
+  font-size: 0.72rem;
+  color: var(--text);
+  opacity: 0;
+  z-index: 7;
+}
+
+.spot-icon {
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+  flex: none;
+}
+
+.spot-text {
+  min-height: 1em;
+}
+
+/* deploy notification banner */
+.macdesk-notif {
+  position: absolute;
+  top: 34px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(237, 224, 212, 0.16);
+  background: rgba(29, 20, 15, 0.92);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  z-index: 6;
+}
+
+.notif-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(221, 184, 146, 0.24);
+  color: var(--tan);
+  flex: none;
+}
+
+.notif-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.notif-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.notif-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.notif-sub {
+  font-size: 0.56rem;
+  color: var(--muted);
+}
+
+/* fake pointer the timeline drives across the desktop */
+.mac-cursor {
+  position: absolute;
+  left: 58%;
+  top: 58%;
+  width: 14px;
+  color: #ede0d4;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  opacity: 0;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.mac-cursor svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.cursor-ring {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(221, 184, 146, 0.9);
+  opacity: 0;
+}
+
+/* second terminal exchange stays hidden until the story reveals it */
+.term-line-2 {
+  opacity: 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -2747,6 +3014,12 @@ a {
   }
 }
 
+@media (max-width: 560px) {
+  .nf-el {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Motion preferences and small screens                                */
 /* ------------------------------------------------------------------ */
@@ -2762,6 +3035,10 @@ a {
   .liquid,
   .orbit-stage {
     display: none;
+  }
+
+  .btn-primary::after {
+    animation: none;
   }
 
   .projects {
@@ -2827,6 +3104,16 @@ a {
 
   .pipeline-vertical {
     display: grid;
+  }
+
+  .liquid,
+  .pokyh-map {
+    display: none;
+  }
+
+  .hero-halo {
+    width: min(96vw, 500px);
+    height: min(96vw, 500px);
   }
 
   .devops,

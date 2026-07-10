@@ -42,17 +42,25 @@ export default function FutureVision() {
           0.2,
         );
 
+        const wordSplits = words.map((word) => SplitText.create(word, { type: "chars" }));
         words.forEach((word, index) => {
-          const at = 1.5 + index * 2.1;
+          const chars = wordSplits[index].chars;
+          /* wide spacing = every word gets a proper hold while pinned */
+          const at = 1.5 + index * 3.3;
           tl.fromTo(
             word,
-            { autoAlpha: 0, y: 80, scale: 0.94, filter: "blur(18px)" },
+            { autoAlpha: 0, y: 36 },
+            { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out", immediateRender: false },
+            at,
+          ).fromTo(
+            chars,
+            { yPercent: 80, rotationX: -88, autoAlpha: 0 },
             {
+              yPercent: 0,
+              rotationX: 0,
               autoAlpha: 1,
-              y: 0,
-              scale: 1,
-              filter: "blur(0px)",
-              duration: 1.0,
+              duration: 0.8,
+              stagger: 0.035,
               ease: "power2.out",
               immediateRender: false,
             },
@@ -60,15 +68,22 @@ export default function FutureVision() {
           );
           if (index < words.length - 1) {
             tl.to(
-              word,
-              { autoAlpha: 0, y: -80, scale: 1.05, filter: "blur(18px)", duration: 1.0, ease: "power2.in" },
-              at + 1.4,
-            );
+              chars,
+              {
+                yPercent: -80,
+                rotationX: 88,
+                autoAlpha: 0,
+                duration: 0.7,
+                stagger: { each: 0.03, from: "end" },
+                ease: "power2.in",
+              },
+              at + 2.6,
+            ).to(word, { autoAlpha: 0, y: -36, duration: 0.35, ease: "power2.in" }, at + 3.1);
           } else {
             tl.to(
               word,
-              { autoAlpha: 0.14, scale: 1.6, filter: "blur(10px)", duration: 1.4, ease: "power2.inOut" },
-              at + 1.5,
+              { autoAlpha: 0.14, scale: 1.6, duration: 1.4, ease: "power2.inOut" },
+              at + 2.8,
             );
           }
         });
@@ -78,17 +93,20 @@ export default function FutureVision() {
             split.words,
             { yPercent: 120 },
             { yPercent: 0, stagger: 0.09, duration: 0.9, ease: "power3.out", immediateRender: false },
-            10.2,
+            15.1,
           );
         }
         tl.fromTo(
           ".future-dark",
           { autoAlpha: 0 },
           { autoAlpha: 1, duration: 2.4, ease: "none", immediateRender: false },
-          9.4,
+          14.3,
         ).to({}, { duration: 0.8 });
 
-        return () => split?.revert();
+        return () => {
+          wordSplits.forEach((wordSplit) => wordSplit.revert());
+          split?.revert();
+        };
       });
     },
     { scope: sectionRef },

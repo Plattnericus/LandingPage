@@ -147,6 +147,7 @@ export default function ProjectShowcase({ github }: { github: GithubSummary }) {
 
         if (!isDesktop || !wheel) {
           const slides = gsap.utils.toArray<HTMLElement>(".project-slide", section);
+          const stackSplits: SplitText[] = [];
           slides.forEach((slide) => {
             gsap.from(slide, {
               autoAlpha: 0,
@@ -155,6 +156,32 @@ export default function ProjectShowcase({ github }: { github: GithubSummary }) {
               ease: EASE.soft,
               scrollTrigger: { trigger: slide, start: "top 78%" },
             });
+            const name = slide.querySelector<HTMLElement>(".slide-name");
+            if (name) {
+              const split = SplitText.create(name, { type: "chars" });
+              stackSplits.push(split);
+              gsap.from(split.chars, {
+                yPercent: 92,
+                autoAlpha: 0,
+                stagger: 0.03,
+                duration: 0.7,
+                ease: EASE.out,
+                scrollTrigger: { trigger: slide, start: "top 72%" },
+              });
+            }
+            const visual = slide.querySelector<HTMLElement>("[data-parallax]");
+            if (visual) {
+              gsap.fromTo(
+                visual,
+                { y: 26 },
+                {
+                  y: -26,
+                  ease: "none",
+                  immediateRender: false,
+                  scrollTrigger: { trigger: slide, start: "top bottom", end: "bottom top", scrub: 1 },
+                },
+              );
+            }
             const arc = slide.querySelector<SVGPathElement>(".arc-path");
             if (arc) {
               gsap.from(arc, {
@@ -165,7 +192,7 @@ export default function ProjectShowcase({ github }: { github: GithubSummary }) {
               });
             }
           });
-          return;
+          return () => stackSplits.forEach((split) => split.revert());
         }
 
         const spokes = gsap.utils.toArray<HTMLElement>(".orbit-item", wheel);
@@ -196,29 +223,24 @@ export default function ProjectShowcase({ github }: { github: GithubSummary }) {
         /* ambient gating: only the active item animates, only while pinned/visible */
         let current = 0;
         let sectionVisible = false;
-        const apexPulse = gsap.to(".orbit-apex", {
-          scale: 1.5,
-          opacity: 0.45,
-          duration: 1.2,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-          paused: true,
-        });
         const syncAmbient = () => {
           ambients.forEach((tweens, i) =>
             tweens.forEach((tween) =>
               sectionVisible && i === current ? tween.play() : tween.pause(),
             ),
           );
-          if (sectionVisible) apexPulse.play();
-          else apexPulse.pause();
         };
         const setActive = (index: number) => {
           if (index === current) return;
           current = index;
           panels.forEach((panel, i) => panel.classList.toggle("is-active", i === index));
           dots.forEach((dot, i) => dot.classList.toggle("is-active", i === index));
+          /* settle pop on the freshly active visual */
+          gsap.fromTo(
+            inners[index],
+            { scale: 0.97 },
+            { scale: 1, duration: 0.5, ease: "back.out(2.4)", overwrite: false, delay: 0.55 },
+          );
           syncAmbient();
         };
 
@@ -410,7 +432,6 @@ export default function ProjectShowcase({ github }: { github: GithubSummary }) {
             </div>
           ))}
         </div>
-        <span className="orbit-apex" aria-hidden="true" />
 
         <div className="orbit-copy">
           {projects.map((project, index) => {

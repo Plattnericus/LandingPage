@@ -214,7 +214,7 @@ export default function PokyhStory() {
 
         /* Real Usage — everything becomes a system map */
         activateBeat(tl, 5, 7.0);
-        tl.to(".pokyh-devices", { scale: 0.66, xPercent: -16, yPercent: 14, autoAlpha: 0.22, duration: 1.4, ease: "power2.inOut" }, 7.0)
+        tl.to(".pokyh-devices", { scale: 0.6, xPercent: -24, yPercent: 18, autoAlpha: 0.05, duration: 1.4, ease: "power2.inOut" }, 7.0)
           .fromTo(
             ".pokyh-map",
             { scale: 0.92 },
@@ -238,6 +238,7 @@ export default function PokyhStory() {
             },
             7.8,
           )
+          .to(".map-pulse", { autoAlpha: 0, duration: 0.25, stagger: 0.5 }, 9.5)
           .to(".map-vps", { filter: "drop-shadow(0 0 22px rgba(221, 184, 146, 0.4))", duration: 0.8 }, 9.2)
           .to({}, { duration: 0.8 });
       });

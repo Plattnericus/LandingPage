@@ -11,15 +11,14 @@ export default function SystemMap({ className }: { className?: string }) {
       fill="none"
       aria-hidden="true"
     >
-      {/* main route: client → cloudflare → nginx → docker/web */}
+      {/* main route: client → cloudflare → nginx → docker/vps edge */}
       <path
         id="map-route"
         className="map-line"
-        d="M110 96 C 210 48, 300 56, 385 92 C 470 128, 570 128, 645 170 C 705 204, 672 252, 606 290 C 560 316, 470 356, 424 410"
+        d="M110 96 C 210 48, 300 56, 385 92 C 470 128, 570 128, 645 170 C 700 202, 680 246, 620 282 C 570 310, 480 316, 430 328"
       />
-      <path className="map-line" d="M430 455 C 470 480, 480 490, 502 505" />
-      <path className="map-line" d="M600 455 C 570 480, 560 490, 540 505" />
-      <path className="map-line" d="M645 214 C 660 260, 660 300, 648 330" />
+      <path className="map-line" d="M360 498 C 380 502, 440 508, 460 512" />
+      <path className="map-line" d="M600 498 C 580 502, 520 508, 500 512" />
 
       {/* client */}
       <circle cx="110" cy="96" r="36" className="map-node" />

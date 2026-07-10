@@ -40,14 +40,14 @@ export const EASE = {
   appleOut: "appleOut",
 } as const;
 
-/** Pin distances (px of scroll) per spec. */
+/** Pin distances (px of scroll); longer pins buy real dwell time per beat. */
 export const PIN = {
-  hero: 2400,
-  heroMobile: 1200,
+  hero: 3200,
+  heroMobile: 1600,
   pokyh: 3200,
-  streamdeck: 2400,
+  streamdeck: 4600,
   devops: 2600,
-  future: 2200,
+  future: 3000,
 } as const;
 
 /** Orbit project carousel: 5 items, 4 steps around the half circle. */
