@@ -29,7 +29,7 @@ export const projects: Project[] = [
       "A school-focused platform built around real student workflows: timetable, grades, absences, messages, mobile app, backend, APIs and deployment.",
     tech: ["Next.js", "TypeScript", "API", "Docker", "Cloudflare"],
     liveUrl: "https://pokyh.com",
-    githubUrl: null,
+    githubUrl: "https://github.com/Plattnericus",
     visual: "pokyh",
   },
   {
@@ -65,7 +65,7 @@ export const projects: Project[] = [
       "A wall-mounted smart display running on a Raspberry Pi: time, weather and daily information rendered as a calm always-on interface.",
     tech: ["JavaScript", "Node.js", "Raspberry Pi", "Selfhosting"],
     liveUrl: null,
-    githubUrl: null,
+    githubUrl: "https://github.com/Plattnericus",
     visual: "magic-mirror",
   },
   {
@@ -84,12 +84,12 @@ export const projects: Project[] = [
     name: "ProjectilePreview-Mod",
     slug: "projectilepreview-mod",
     repoName: "ProjectilePreview-Mod",
-    eyebrow: "Game mod",
+    eyebrow: "Minecraft mod",
     description:
       "A game mod that renders the predicted flight path of projectiles in real time, directly inside the game world.",
     tech: ["Java", "Modding", "Physics"],
-    liveUrl: null,
-    githubUrl: null,
+    liveUrl: "https://modrinth.com/mod/projectile.preview",
+    githubUrl: "https://github.com/Plattnericus",
     visual: "projectile",
   },
 ];

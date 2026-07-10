@@ -1966,6 +1966,28 @@ a {
 .sd-inner {
   display: grid;
   gap: clamp(1.6rem, 4vh, 3rem);
+  align-items: center;
+}
+
+/* desktop: the animated desktop lives left, the copy sits right,
+   so the whole mockup always fits the pinned viewport */
+@media (min-width: 900px) {
+  .sd-inner {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: clamp(2rem, 4vw, 4.5rem);
+  }
+
+  .sd-stage {
+    order: 1;
+  }
+
+  .sd-head {
+    order: 2;
+  }
+
+  .sd-title {
+    font-size: clamp(2rem, 3.1vw, 3.3rem);
+  }
 }
 
 .sd-head {
@@ -1996,8 +2018,7 @@ a {
 }
 
 /* keep the whole browser frame inside the pinned viewport:
-   frame height ≈ width / 1.7 + bar, so capping width at 92svh
-   keeps it around 58svh and leaves room for the head */
+   frame height ≈ width / 1.7 + bar, so the width is capped in svh */
 .streamdeck {
   padding-block: clamp(2.5rem, 5vh, 4rem);
 }
@@ -2007,7 +2028,7 @@ a {
 }
 
 .sd-browser {
-  width: min(100%, 1060px, 86svh);
+  width: min(100%, 1060px, 130svh);
   margin-inline: auto;
   will-change: transform;
 }

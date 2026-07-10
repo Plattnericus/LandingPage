@@ -35,8 +35,15 @@ export default function PokyhStory() {
         const chipEls = (beat: string) =>
           chips.filter((chip) => (chipByBeat[beat] ?? []).includes(chip.dataset.chip ?? ""));
 
-        /* resting states (restored when scrolling back up) */
+        /* resting states (restored when scrolling back up).
+           Screen contents start hidden too — otherwise they'd flash in
+           fully visible with the screen crossfade and then animate a
+           second time (the "plays twice" glitch). */
         gsap.set(screens.slice(1), { autoAlpha: 0 });
+        gsap.set(".wire-path", { drawSVG: "0%" });
+        gsap.set(".pokyh-period", { autoAlpha: 0.2, scale: 0.82 });
+        gsap.set('[data-screen="api"] p, [data-screen="deploy"] p', { autoAlpha: 0, x: -14 });
+        gsap.set(".pokyh-msg", { autoAlpha: 0, x: 18 });
         gsap.set(".pokyh-phone-device", { yPercent: 34, rotation: -5, autoAlpha: 0 });
         gsap.set(chips, { autoAlpha: 0.28, scale: 0.96 });
         gsap.set(".map-line", { drawSVG: "0%" });
