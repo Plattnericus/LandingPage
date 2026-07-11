@@ -1,10 +1,16 @@
-export type ProjectVisualId =
-  | "pokyh"
-  | "threejs"
-  | "streamdeck"
-  | "magic-mirror"
-  | "minesweeper"
-  | "projectile";
+export type ProjectPreview =
+  | {
+      kind: "video";
+      src: string;
+      poster: string;
+      objectPosition?: string;
+    }
+  | {
+      kind: "swap";
+      sources: readonly [string, string];
+      poster: string;
+      objectPosition?: string;
+    };
 
 export type Project = {
   name: string;
@@ -16,7 +22,8 @@ export type Project = {
   tech: string[];
   liveUrl: string | null;
   githubUrl: string | null;
-  visual: ProjectVisualId;
+  /** Local-only media used by the Lenis-style project card. */
+  preview: ProjectPreview;
 };
 
 export const projects: Project[] = [
@@ -30,7 +37,11 @@ export const projects: Project[] = [
     tech: ["Next.js", "TypeScript", "API", "Docker", "Cloudflare"],
     liveUrl: "https://pokyh.com",
     githubUrl: "https://github.com/Plattnericus",
-    visual: "pokyh",
+    preview: {
+      kind: "video",
+      src: "/projects/pokyh.mp4",
+      poster: "/showcase/pokyh.png",
+    },
   },
   {
     name: "ThreeJS Portfolio",
@@ -42,7 +53,11 @@ export const projects: Project[] = [
     tech: ["Three.js", "WebGL", "GLSL", "JavaScript"],
     liveUrl: "https://threejs.plattnericus.dev",
     githubUrl: "https://github.com/Plattnericus/ThreeJS_Portfolio",
-    visual: "threejs",
+    preview: {
+      kind: "video",
+      src: "/projects/threejs_portfolio.mp4",
+      poster: "/showcase/threejs-portfolio.webp",
+    },
   },
   {
     name: "StreamDeck",
@@ -54,7 +69,11 @@ export const projects: Project[] = [
     tech: ["React", "JavaScript", "Desktop UI", "Motion"],
     liveUrl: "https://streamdeck.plattnericus.dev/desktop",
     githubUrl: "https://github.com/Plattnericus/StreamDeck",
-    visual: "streamdeck",
+    preview: {
+      kind: "video",
+      src: "/projects/streamdeck.mp4",
+      poster: "/showcase/streamdeck.webp",
+    },
   },
   {
     name: "Magic-Mirror",
@@ -66,7 +85,11 @@ export const projects: Project[] = [
     tech: ["JavaScript", "Node.js", "Raspberry Pi", "Selfhosting"],
     liveUrl: null,
     githubUrl: "https://github.com/Plattnericus",
-    visual: "magic-mirror",
+    preview: {
+      kind: "video",
+      src: "/projects/magicmirror.mp4",
+      poster: "/showcase/magic-mirror.png",
+    },
   },
   {
     name: "Minesweeper",
@@ -78,7 +101,11 @@ export const projects: Project[] = [
     tech: ["Game Logic", "Grid Algorithms", "UI"],
     liveUrl: null,
     githubUrl: "https://github.com/Plattnericus",
-    visual: "minesweeper",
+    preview: {
+      kind: "video",
+      src: "/projects/minesweeper.mp4",
+      poster: "/showcase/minesweeper.png",
+    },
   },
   {
     name: "ProjectilePreview-Mod",
@@ -90,6 +117,13 @@ export const projects: Project[] = [
     tech: ["Java", "Modding", "Physics"],
     liveUrl: "https://modrinth.com/mod/projectile.preview",
     githubUrl: "https://github.com/Plattnericus",
-    visual: "projectile",
+    preview: {
+      kind: "swap",
+      sources: [
+        "/projects/projectile_preview_01.gif",
+        "/projects/projectile_preview_02.gif",
+      ],
+      poster: "/showcase/projectilepreview-mod.png",
+    },
   },
 ];

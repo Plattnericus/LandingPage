@@ -1,16 +1,16 @@
+import ClawdPet from "@/components/clawd/ClawdPet";
+import GLCanvas from "@/components/gl/GLCanvas";
+import IntroLoader from "@/components/loader/IntroLoader";
+import CursorGlow from "@/components/motion/CursorGlow";
+import Footer from "@/components/lenis-style/Footer";
+import Heat from "@/components/lenis-style/Heat";
+import Hero from "@/components/lenis-style/Hero";
+import ProgressBar from "@/components/lenis-style/ProgressBar";
+import Rethink from "@/components/lenis-style/Rethink";
+import Showcase from "@/components/lenis-style/Showcase";
+import Solution from "@/components/lenis-style/Solution";
+import Why from "@/components/lenis-style/Why";
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
-import ContactSection from "@/components/sections/ContactSection";
-import CybersecurityScan from "@/components/sections/CybersecurityScan";
-import FutureVision from "@/components/sections/FutureVision";
-import HeroPinnedStory from "@/components/sections/HeroPinnedStory";
-import InfrastructurePipeline from "@/components/sections/InfrastructurePipeline";
-import IntroReveal from "@/components/sections/IntroReveal";
-import PokyhStory from "@/components/sections/PokyhStory";
-import ProjectShowcase from "@/components/sections/ProjectShowcase";
-import StatementSection from "@/components/sections/StatementSection";
-import StreamDeckStory from "@/components/sections/StreamDeckStory";
-import TechStackSection from "@/components/sections/TechStackSection";
-import { getGithubSummary } from "@/lib/github";
 import { projects } from "@/lib/projects";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
@@ -166,9 +166,7 @@ const jsonLd = {
   ],
 };
 
-export default async function Home() {
-  const github = await getGithubSummary();
-
+export default function Home() {
   return (
     <>
       <script
@@ -178,18 +176,19 @@ export default async function Home() {
         }}
       />
       <SmoothScrollProvider>
-        <IntroReveal />
+        <IntroLoader />
+        <ProgressBar />
+        <CursorGlow />
+        <GLCanvas />
+        <ClawdPet />
         <main>
-          <HeroPinnedStory />
-          <StatementSection />
-          <ProjectShowcase github={github} />
-          <PokyhStory />
-          <StreamDeckStory github={github} />
-          <InfrastructurePipeline />
-          <CybersecurityScan />
-          <TechStackSection />
-          <FutureVision />
-          <ContactSection github={github} />
+          <Hero />
+          <Why />
+          <Showcase />
+          <Rethink />
+          <Solution />
+          <Heat />
+          <Footer />
         </main>
       </SmoothScrollProvider>
     </>

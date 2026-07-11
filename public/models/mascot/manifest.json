@@ -1,0 +1,7 @@
+{
+  "name": "Clawd Final Production v7",
+  "masterGlb": "MASTER/Clawd_Final_Production_V7_All_12_Animations.glb",
+  "characterColor": "#DE886D",
+  "whiteCharacterOutline": false,
+  "notes": "GIFs unchanged from v6; GLB geometry adjusted to be thicker and slightly shorter."
+}

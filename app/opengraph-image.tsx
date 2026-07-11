@@ -18,8 +18,8 @@ export default function Image() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#17100c",
-          color: "#ede0d4",
+          background: "#0b0908",
+          color: "#f2ede6",
           padding: 72,
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -41,7 +41,7 @@ export default function Image() {
           <div style={{ fontSize: 132, lineHeight: 0.92, fontWeight: 740 }}>
             Nexor
           </div>
-          <div style={{ color: "#ddb892", fontSize: 48 }}>
+          <div style={{ color: "#d97757", fontSize: 48 }}>
             Build. Deploy. Secure.
           </div>
         </div>

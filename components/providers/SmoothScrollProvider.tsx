@@ -13,10 +13,7 @@ import {
 } from "react";
 import Lenis from "lenis";
 import { gsap, ScrollTrigger } from "@/lib/animation";
-import AmbientBackground from "@/components/motion/AmbientBackground";
-import CursorGlow from "@/components/motion/CursorGlow";
 import DynamicFavicon from "@/components/motion/DynamicFavicon";
-import ScrollProgress from "@/components/motion/ScrollProgress";
 
 type SmoothScrollContextValue = {
   lenisRef: RefObject<Lenis | null>;
@@ -56,17 +53,7 @@ export default function SmoothScrollProvider({ children }: { children: ReactNode
     });
     lenisRef.current = lenis;
 
-    /* scroll-velocity skew on section content — the melt only lives on
-       inner wrappers so it can never break position-fixed pinning */
-    const skewSetters = gsap.utils
-      .toArray<HTMLElement>("main .section-inner")
-      .map((el) => gsap.quickTo(el, "skewY", { duration: 0.55, ease: "power3.out" }));
-    lenis.on("scroll", (instance: Lenis) => {
-      ScrollTrigger.update();
-      const raw = gsap.utils.clamp(-0.4, 0.4, instance.velocity * 0.006);
-      const skew = Math.abs(raw) < 0.02 ? 0 : raw;
-      skewSetters.forEach((setSkew) => setSkew(skew));
-    });
+    lenis.on("scroll", () => ScrollTrigger.update());
     const tick = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
@@ -80,6 +67,21 @@ export default function SmoothScrollProvider({ children }: { children: ReactNode
     };
   }, []);
 
+  /* hold the page still behind the intro loader, release on completion */
+  useEffect(() => {
+    if (introDone) {
+      document.documentElement.classList.remove("no-scroll");
+      lenisRef.current?.start();
+      /* make sure the ticker is running for the hero handoff timeline */
+      gsap.ticker.wake();
+      ScrollTrigger.refresh();
+    } else {
+      document.documentElement.classList.add("no-scroll");
+      lenisRef.current?.stop();
+    }
+    return () => document.documentElement.classList.remove("no-scroll");
+  }, [introDone]);
+
   const value = useMemo(
     () => ({ lenisRef, introDone, completeIntro }),
     [introDone, completeIntro],
@@ -87,10 +89,7 @@ export default function SmoothScrollProvider({ children }: { children: ReactNode
 
   return (
     <SmoothScrollContext.Provider value={value}>
-      <ScrollProgress />
-      <AmbientBackground />
       <DynamicFavicon />
-      <CursorGlow />
       {children}
     </SmoothScrollContext.Provider>
   );

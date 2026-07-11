@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { ScrollTrigger, gsap } from "@/lib/animation";
+import { PALETTE } from "@/lib/palette";
 
 type GlyphId =
   | "n"
@@ -21,48 +22,33 @@ type SectionMeta = { selector: string; titles: string[]; glyph: GlyphId };
 const SECTIONS: SectionMeta[] = [
   { selector: ".hero", titles: [], glyph: "n" },
   {
-    selector: ".statement",
-    titles: ["I build things that actually run.", "Shipped > perfect. — Nexor", "Real systems only. — Nexor"],
-    glyph: "quote",
-  },
-  {
-    selector: ".projects",
-    titles: ["Projects with real purpose. — N", "5 projects, zero templates.", "Scroll the orbit. — Nexor"],
-    glyph: "orbit",
-  },
-  {
-    selector: ".pokyh",
-    titles: ["POKYH — idea to deployed system.", "POKYH — school, but make it software."],
-    glyph: "grid",
-  },
-  {
-    selector: ".streamdeck",
-    titles: ["StreamDeck — a desktop in your browser.", "StreamDeck — windows, dock, terminal."],
-    glyph: "window",
-  },
-  {
-    selector: ".devops",
-    titles: ["Code is only half the story.", "git push → live. — Nexor", "Pipeline: all systems go."],
-    glyph: "branch",
-  },
-  {
-    selector: ".security",
-    titles: ["Break it. Then build it safer.", "Scanning… 0 critical. — Nexor"],
-    glyph: "shield",
-  },
-  {
-    selector: ".tech",
-    titles: ["Tools I use to build. — Nexor", "{ stack } — Nexor"],
+    selector: ".why",
+    titles: ["Why full stack? — Nexor", "Every layer, one developer."],
     glyph: "braces",
   },
   {
-    selector: ".future",
-    titles: ["Where I am heading. — Nexor", "Fullstack → Infra → Security."],
+    selector: ".showcase",
+    titles: ["Nexor runs live.", "Not mockups — deployments."],
+    glyph: "orbit",
+  },
+  {
+    selector: ".rethink",
+    titles: ["Enter Nexor.", "Web experiences, done right."],
     glyph: "arrow",
   },
   {
-    selector: ".contact",
-    titles: ["Want to see what I build next?", "Say hello. — Nexor"],
+    selector: ".solution",
+    titles: ["Fast. Secure. Deployed. — Nexor"],
+    glyph: "quote",
+  },
+  {
+    selector: ".heat",
+    titles: ["Nexor brings the heat.", "01 → 07, all real skills."],
+    glyph: "shield",
+  },
+  {
+    selector: ".footer-giant",
+    titles: ["Open to projects and ideas.", "Say hello. — Nexor"],
     glyph: "at",
   },
 ];
@@ -74,9 +60,9 @@ const HIDDEN_TITLES = [
   "The pipeline waits for no tab.",
 ];
 
-const TAN = "#ddb892";
-const SAND = "#e6ccb2";
-const TEXT = "#ede0d4";
+const TAN = PALETTE.accent;
+const SAND = PALETTE.accentSoft;
+const TEXT = PALETTE.light;
 
 function drawGlyph(ctx: CanvasRenderingContext2D, glyph: GlyphId, color: string, scale: number) {
   ctx.save();
@@ -227,7 +213,7 @@ export default function DynamicFavicon() {
 
       ctx.beginPath();
       ctx.roundRect(2, 2, 60, 60, 16);
-      ctx.fillStyle = "#17100c";
+      ctx.fillStyle = PALETTE.tile;
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.strokeStyle = "rgba(237, 224, 212, 0.18)";
@@ -236,12 +222,12 @@ export default function DynamicFavicon() {
       ctx.beginPath();
       ctx.lineWidth = 5;
       ctx.lineCap = "round";
-      ctx.strokeStyle = mode === "hidden" ? "rgba(201, 170, 140, 0.5)" : TAN;
+      ctx.strokeStyle = mode === "hidden" ? "rgba(217, 119, 87, 0.5)" : TAN;
       const startAngle = -Math.PI / 2 + spin * Math.PI * 2;
       ctx.arc(32, 32, 25, startAngle, startAngle + Math.max(0.03, progress) * Math.PI * 2);
       ctx.stroke();
 
-      drawGlyph(ctx, glyph, mode === "hidden" ? "rgba(237, 224, 212, 0.45)" : TEXT, pop);
+      drawGlyph(ctx, glyph, mode === "hidden" ? "rgba(242, 237, 230, 0.45)" : TEXT, pop);
 
       if (mode === "hidden") {
         ctx.beginPath();
