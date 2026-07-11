@@ -43,7 +43,6 @@ export const EASE = {
 /** Pin distances (px of scroll); longer pins buy real dwell time per beat. */
 export const PIN = {
   showcase: 4600,
-  heat: 3400,
 } as const;
 
 export const BP_DESKTOP = "(min-width: 900px)";

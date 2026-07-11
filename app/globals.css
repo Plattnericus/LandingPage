@@ -709,14 +709,18 @@ main {
   left: 50%;
   margin: 0;
   font-family: var(--font-ext);
-  font-size: 3.07692vh;
+  /* Rendered at its full end-size (base size × the old scale multiplier)
+     so the glyphs are rasterized crisp from the start; the scroll-driven
+     transform below only ever scales *down* toward that size (0 → 1), never
+     up past it, so the zoom-in never looks blurry at any point. */
+  font-size: calc(3.07692vh * 18.2);
   font-weight: 700;
   line-height: 0.9;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0;
   opacity: calc(var(--rethink-progress-1) * 2);
-  transform: translate(-54.2%, -50%) scale(calc(var(--rethink-progress-1) * 18.2));
+  transform: translate(-54.2%, -50%) scale(var(--rethink-progress-1));
   transform-origin: 50% calc(50% - var(--rethink-progress-1) * 27%);
   will-change: transform, opacity;
 }
@@ -740,8 +744,8 @@ main {
   }
 
   .rt-enter {
-    font-size: 6.37255vh;
-    transform: translate(-50%, -50%) scale(calc(var(--rethink-progress-1) * 8.5));
+    font-size: calc(6.37255vh * 8.5);
+    transform: translate(-50%, -50%) scale(var(--rethink-progress-1));
     transform-origin: 50% calc(50% - var(--rethink-progress-1) * 25%);
   }
 }
@@ -800,9 +804,8 @@ main {
 }
 
 .heat-pin {
-  height: 100svh;
-  overflow: hidden;
   position: relative;
+  padding: 10vh clamp(1.4rem, 4vw, 3.4rem) 12vh;
 }
 
 /* soft terracotta floor glow, like the pink haze on lenis.dev */
@@ -819,15 +822,14 @@ main {
 }
 
 .heat-title {
-  position: absolute;
-  top: 7vh;
-  right: clamp(1.4rem, 5vw, 4.5rem);
-  text-align: right;
+  position: relative;
+  text-align: left;
   font-family: var(--font-head);
   font-weight: 400;
   text-transform: uppercase;
   font-size: clamp(2.4rem, 4.8vw, 4.6rem);
   line-height: 0.95;
+  margin-bottom: clamp(2rem, 6vh, 4rem);
   z-index: 3;
 }
 
@@ -836,14 +838,16 @@ main {
 }
 
 .heat-cards {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: clamp(1rem, 2vw, 1.6rem);
 }
 
 .heat-card {
-  position: absolute;
-  width: clamp(240px, 27vw, 420px);
+  position: relative;
+  width: 100%;
   aspect-ratio: 1 / 0.98;
   background: rgba(242, 237, 230, 0.55);
   backdrop-filter: blur(9px);
@@ -1202,31 +1206,15 @@ main {
   }
 
   .heat-pin {
-    height: auto;
-    overflow: visible;
     padding: 8vh 1.4rem 10vh;
   }
 
-  .heat-title {
-    position: relative;
-    top: auto;
-    right: auto;
-    text-align: left;
-    margin-bottom: 3rem;
-  }
-
   .heat-cards {
-    position: relative;
-    inset: auto;
-    display: grid;
-    gap: 1.2rem;
+    grid-template-columns: 1fr;
   }
 
   .heat-card {
-    position: relative;
-    width: 100%;
     max-width: 420px;
-    visibility: visible;
   }
 
   .hero-bottom {

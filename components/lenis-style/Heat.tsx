@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { BP_MOBILE, MM_DESKTOP, PIN, gsap, useGSAP } from "@/lib/animation";
+import { NO_MOTION_PREF, gsap, useGSAP } from "@/lib/animation";
 
 const skills = [
   "Next.js & React",
@@ -22,33 +22,10 @@ export default function Heat() {
       if (!section) return;
       const mm = gsap.matchMedia();
 
-      mm.add(MM_DESKTOP, () => {
-        const cards = gsap.utils.toArray<HTMLElement>(".heat-card", section);
-
-        const tl = gsap.timeline({
-          defaults: { ease: "power2.out" },
-          scrollTrigger: {
-            id: "heat",
-            trigger: section,
-            start: "top top",
-            end: `+=${PIN.heat}`,
-            scrub: 1,
-            pin: ".heat-pin",
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-
-        cards.forEach((card, index) => {
-          tl.fromTo(
-            card,
-            { y: "110vh", rotation: index % 2 ? 5 : -5, autoAlpha: 0 },
-            { y: 0, rotation: 0, autoAlpha: 1, duration: 1, immediateRender: false },
-            index * 0.85,
-          );
-        });
-        tl.to({}, { duration: 0.9 });
-
+      /* lenis.dev doesn't pin this section at all — cards sit in normal
+         scroll flow and each fades up individually as it enters view. One
+         shared trigger per card instead of a pinned scrub timeline. */
+      mm.add(NO_MOTION_PREF, () => {
         gsap.fromTo(
           ".heat-title",
           { y: 40, autoAlpha: 0 },
@@ -56,22 +33,20 @@ export default function Heat() {
             y: 0,
             autoAlpha: 1,
             duration: 0.8,
-            scrollTrigger: { trigger: section, start: "top 60%" },
+            scrollTrigger: { trigger: section, start: "top 75%" },
           },
         );
-      });
 
-      mm.add(BP_MOBILE, () => {
         gsap.utils.toArray<HTMLElement>(".heat-card", section).forEach((card) => {
           gsap.fromTo(
             card,
-            { y: 48, autoAlpha: 0 },
+            { y: 56, autoAlpha: 0 },
             {
               y: 0,
               autoAlpha: 1,
               duration: 0.7,
               ease: "power2.out",
-              scrollTrigger: { trigger: card, start: "top 82%" },
+              scrollTrigger: { trigger: card, start: "top 85%" },
             },
           );
         });
@@ -90,15 +65,7 @@ export default function Heat() {
         </h2>
         <div className="heat-cards">
           {skills.map((skill, index) => (
-            <div
-              key={skill}
-              className="heat-card"
-              style={{
-                left: `calc(${4 + index * 8.6}% )`,
-                top: `calc(${8 + index * 8.2}vh)`,
-                zIndex: index + 1,
-              }}
-            >
+            <div key={skill} className="heat-card">
               <p className="hc-num">{String(index + 1).padStart(2, "0")}</p>
               <p className="hc-label">{skill}</p>
             </div>

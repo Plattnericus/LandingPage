@@ -149,28 +149,27 @@ export default function ClawdPet() {
       ];
     });
 
-    /* the hero's own CTAs live in the same bottom-right corner — step aside
-       while it's on screen instead of covering the Projects button. The
-       first sync (page-load state) snaps instantly so there is no flash of
-       Clawd fading OUT over the button before the trigger catches up. */
+    /* the hero occupies the same top-right corner Clawd spawns in — step
+       aside while it's on screen instead of overlapping the wordmark. Set
+       hidden synchronously rather than waiting for the trigger's first
+       onToggle: Clawd only ever becomes ready right after the intro loader
+       finishes, and scrolling is locked for the whole intro, so the hero is
+       *always* on screen (scrollY 0) at that exact moment — no need for an
+       async round-trip to know that, and no risk of a visible flash on a
+       slow first ScrollTrigger refresh. */
     const hero = document.querySelector(".hero");
     if (hero) {
-      let firstSync = true;
+      const root = rootRef.current;
+      if (root) gsap.set(root, { autoAlpha: 0 });
       triggers.push(
         ScrollTrigger.create({
           trigger: hero,
           start: "top top",
           end: "bottom top",
           onToggle: (self) => {
-            const root = rootRef.current;
-            if (!root) return;
+            if (!rootRef.current) return;
             const target = self.isActive ? 0 : 1;
-            if (firstSync) {
-              gsap.set(root, { autoAlpha: target });
-              firstSync = false;
-            } else {
-              gsap.to(root, { autoAlpha: target, duration: 0.35, overwrite: true });
-            }
+            gsap.to(rootRef.current, { autoAlpha: target, duration: 0.35, overwrite: true });
           },
         }),
       );
