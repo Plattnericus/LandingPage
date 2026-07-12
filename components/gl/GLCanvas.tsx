@@ -31,11 +31,9 @@ const prefersStill =
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const ARM_OPEN_URL = "/models/arm/arm.glb";
-const ARM_POINT_URL = "/models/arm/arm2.glb";
+const ARM_MODEL_URL = "/models/arm/arm.glb";
 
-useGLTF.preload(ARM_OPEN_URL);
-useGLTF.preload(ARM_POINT_URL);
+useGLTF.preload(ARM_MODEL_URL);
 
 /* ------------------------------------------------------------------ */
 /* Scroll sync — measured straight from the DOM every frame, so pin    */
@@ -411,58 +409,32 @@ const chromeMaterial = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
 });
 
-const orangeHandMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    uAccent: { value: new THREE.Color(PALETTE.accent) },
-    uLightPosition: { value: new THREE.Vector3(-3.5, 4.5, 5.5) },
-    uOpacity: { value: 0.34 },
-    uTime: { value: 0 },
-  },
-  vertexShader: `
-    varying vec3 vWorldNormal;
-    varying vec3 vWorldPosition;
-
-    void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
-      vWorldNormal = normalize(mat3(modelMatrix) * normal);
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
-    }
-  `,
-  fragmentShader: `
-    uniform vec3 uAccent;
-    uniform vec3 uLightPosition;
-    uniform float uOpacity;
-    uniform float uTime;
-    varying vec3 vWorldNormal;
-    varying vec3 vWorldPosition;
-
-    void main() {
-      vec3 normal = normalize(vWorldNormal);
-      if (!gl_FrontFacing) normal *= -1.0;
-
-      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
-      vec3 lightDirection = normalize(uLightPosition - vWorldPosition);
-      vec3 halfDirection = normalize(lightDirection + viewDirection);
-
-      float diffuse = max(dot(normal, lightDirection), 0.0);
-      float specular = pow(max(dot(normal, halfDirection), 0.0), 68.0);
-      float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.15);
-      float pulse = 0.94 + sin(uTime * 0.72) * 0.06;
-
-      vec3 darkMetal = vec3(0.022, 0.018, 0.016) * (0.28 + diffuse * 0.44);
-      vec3 warmMetal = uAccent * diffuse * 0.46;
-      vec3 metallicHighlight = mix(uAccent, vec3(1.0, 0.68, 0.42), 0.22) * specular * 1.34;
-      vec3 orangeGlow = uAccent * (rim * 1.12 * pulse + specular * 0.44);
-      float alpha = uOpacity * (0.76 + rim * 0.24);
-
-      gl_FragColor = vec4(darkMetal + warmMetal + metallicHighlight + orangeGlow, alpha);
-    }
-  `,
+const orangeHandMaterial = new THREE.MeshPhysicalMaterial({
+  color: "#1c0b08",
+  emissive: PALETTE.accent,
+  emissiveIntensity: 0.03,
+  metalness: 0.86,
+  roughness: 0.38,
+  clearcoat: 0.42,
+  clearcoatRoughness: 0.28,
+  sheen: 0.55,
+  sheenColor: new THREE.Color(PALETTE.accent),
+  sheenRoughness: 0.42,
   transparent: true,
+  opacity: 0.84,
   depthWrite: true,
-  side: THREE.FrontSide,
-  toneMapped: false,
+  side: THREE.DoubleSide,
+});
+
+/* The light section uses the same exact arm.glb with a fully opaque physical
+   orange metal. Opacity there would expose the model's internal surfaces. */
+const lateOrangeHandMaterial = new THREE.MeshPhysicalMaterial({
+  color: PALETTE.accent,
+  metalness: 0.76,
+  roughness: 0.28,
+  clearcoat: 0.48,
+  clearcoatRoughness: 0.2,
+  side: THREE.DoubleSide,
 });
 
 /** Center + scale factors so an object's longest axis spans `target` world units.
@@ -561,7 +533,8 @@ function sampleEarlyHand(p: number) {
 
 function EarlyHandRig() {
   const group = useRef<THREE.Group>(null);
-  const arm = useChromeArm(ARM_OPEN_URL, 5.15, orangeHandMaterial);
+  const orangeLight = useRef<THREE.PointLight>(null);
+  const arm = useChromeArm(ARM_MODEL_URL, 5.15, orangeHandMaterial);
   const motion = useRef({ ...sampleEarlyHand(0) });
 
   useFrame(({ clock }, delta) => {
@@ -583,37 +556,41 @@ function EarlyHandRig() {
     rig.rotation.set(pose.rx + breathe * 0.008, pose.ry, pose.rz - breathe * 0.008);
     rig.scale.setScalar(pose.scale);
     rig.visible = pose.opacity > 0.01 && lightProgress.value < 0.02;
-    orangeHandMaterial.uniforms.uOpacity.value = pose.opacity;
-    orangeHandMaterial.uniforms.uTime.value = clock.elapsedTime;
-    orangeHandMaterial.uniforms.uLightPosition.value.set(
-      pose.x - 1.25 + breathe * 0.2,
-      pose.y + 2.2,
-      5.5,
-    );
+    orangeHandMaterial.opacity = THREE.MathUtils.clamp(pose.opacity * 2.05, 0, 0.74);
+    if (orangeLight.current) {
+      orangeLight.current.position.set(
+        pose.x - 1.1 + breathe * 0.2,
+        pose.y + 1.8,
+        3.8,
+      );
+      orangeLight.current.intensity = pose.opacity * 8;
+    }
   });
 
   return (
-    <group ref={group}>
-      <group rotation={[0.5, Math.PI, 0]}>
-        <group scale={arm.scale} position={arm.position}>
-          <primitive object={arm.scene} />
+    <>
+      <pointLight
+        ref={orangeLight}
+        color={PALETTE.accent}
+        position={[-2.6, -0.4, 3.8]}
+        intensity={3.5}
+        distance={9}
+        decay={2}
+      />
+      <group ref={group}>
+        <group rotation={[0.5, Math.PI, 0]}>
+          <group scale={arm.scale} position={arm.position}>
+            <primitive object={arm.scene} />
+          </group>
         </group>
       </group>
-    </group>
+    </>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Hand rig — modeled on lenis.dev's own hand sequence: the model stays */
-/* visibly, continuously present from its entrance onward (it never    */
-/* drifts fully offscreen the way our first pass did) — pointing up    */
-/* through the solution paragraph, holding that pose through the heat  */
-/* cards, then leaning in from the right for the footer. The two GLBs  */
-/* we have (an open/cupped presenting pose and a pointing pose) still  */
-/* require one hard swap since neither is a rigged blend target of the */
-/* other; that swap is compressed into a short, brief dip (SWAP_START– */
-/* SWAP_END below) so the hand reads as continuously on screen, the    */
-/* same way lenis.dev's single rigged hand never disappears.           */
+/* Later hand rig — the same exact arm.glb remains continuously present */
+/* through the light half of the page. No geometry swap is allowed.     */
 /* ------------------------------------------------------------------ */
 
 /** Piecewise keyframes: [progress, x, y, rotX, rotY, rotZ, scale]. Interpolated
@@ -629,11 +606,6 @@ const HAND_KEYFRAMES: Array<
   [0.42, 0.0, -1.0, 0.0, -0.244, -0.279, 1.2], // exact Heat start
   [1.0, 1.7, -1.15, 0.0, -12.217, -0.279, 1.28], // page end: -700deg Y, matched to lenis.dev: bigger hand, finger high-right
 ];
-
-/** Progress value at which the visible pose switches from OPEN to POINT —
-    kept inside the brief SWAP_START–SWAP_END dip above, while y is at its
-    most negative (offscreen), so the swap itself is never seen. */
-const POSE_SWAP_AT = 0.22;
 
 function sampleHand(p: number) {
   const frames = HAND_KEYFRAMES;
@@ -654,10 +626,7 @@ function sampleHand(p: number) {
 
 function HandRig() {
   const group = useRef<THREE.Group>(null);
-  const openArm = useChromeArm(ARM_OPEN_URL, 4.6);
-  const pointArm = useChromeArm(ARM_POINT_URL, 5.2);
-  const openRef = useRef<THREE.Group>(null);
-  const pointRef = useRef<THREE.Group>(null);
+  const arm = useChromeArm(ARM_MODEL_URL, 5.05, lateOrangeHandMaterial);
 
   useFrame(({ clock }) => {
     const g = group.current;
@@ -670,25 +639,13 @@ function HandRig() {
     g.rotation.set(rotX + idle * 0.012, rotY, rotZ - idle * 0.01);
     g.scale.setScalar(scale);
     g.visible = p > 0.001 && handHidden.value < 0.5;
-
-    /* pose handover happens while the rig is at its lowest (offscreen) point */
-    if (openRef.current) openRef.current.visible = p < POSE_SWAP_AT;
-    if (pointRef.current) pointRef.current.visible = p >= POSE_SWAP_AT;
   });
 
   return (
     <group ref={group} visible={false}>
-      <group ref={openRef} rotation={[0.5, 0, 0]}>
-        {/* palm-up: the export faces the palm away, so flip around the long axis */}
-        <group rotation={[0, Math.PI, 0]}>
-          <group scale={openArm.scale} position={openArm.position}>
-            <primitive object={openArm.scene} />
-          </group>
-        </group>
-      </group>
-      <group ref={pointRef} visible={false}>
-        <group scale={pointArm.scale} position={pointArm.position}>
-          <primitive object={pointArm.scene} />
+      <group rotation={[0.5, Math.PI, 0]}>
+        <group scale={arm.scale} position={arm.position}>
+          <primitive object={arm.scene} />
         </group>
       </group>
     </group>
