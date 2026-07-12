@@ -55,6 +55,7 @@ const jsonLd = {
       image: absoluteUrl("/opengraph-image"),
       sameAs: [
         siteConfig.github,
+        siteConfig.modrinth,
         ...projects.flatMap((project) => (project.liveUrl ? [project.liveUrl] : [])),
       ],
       jobTitle: "Fullstack Developer",

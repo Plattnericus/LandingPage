@@ -121,7 +121,9 @@ export const metadata: Metadata = {
       }
     : undefined,
   icons: {
-    icon: "/icon",
+    /* /favicon.ico is emitted automatically from app/favicon.ico; only the
+       modern PNG mark and the Apple touch icon need declaring here. */
+    icon: { url: "/icon", type: "image/png", sizes: "64x64" },
     apple: "/apple-icon",
   },
   manifest: "/site.webmanifest",

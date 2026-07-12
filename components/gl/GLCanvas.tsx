@@ -1,11 +1,33 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { PALETTE } from "@/lib/palette";
+
+/* react-three-fiber v9 constructs a THREE.Clock internally on every Canvas
+   mount, and three r183+ prints a one-off deprecation notice from Clock's
+   constructor (the switch to THREE.Timer only landed in r3f v10, still alpha).
+   We can't stop r3f from creating that Clock, so we route three's own console
+   output through its official hook and drop just that single line — every other
+   three log/warn/error is forwarded untouched and the global console is never
+   patched. Remove once react-three-fiber v10 is stable. */
+if (typeof THREE.setConsoleFunction === "function") {
+  THREE.setConsoleFunction((type, message, ...params) => {
+    if (
+      typeof message === "string" &&
+      message.includes("Clock: This module has been deprecated")
+    ) {
+      return;
+    }
+    const sink =
+      type === "warn" ? console.warn : type === "error" ? console.error : console.log;
+    sink(message, ...params);
+  });
+}
 
 type Progress = { value: number };
 
@@ -409,33 +431,88 @@ const chromeMaterial = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
 });
 
-const orangeHandMaterial = new THREE.MeshPhysicalMaterial({
-  color: "#1c0b08",
-  emissive: PALETTE.accent,
-  emissiveIntensity: 0.03,
-  metalness: 0.86,
-  roughness: 0.38,
-  clearcoat: 0.42,
-  clearcoatRoughness: 0.28,
-  sheen: 0.55,
-  sheenColor: new THREE.Color(PALETTE.accent),
-  sheenRoughness: 0.42,
-  transparent: true,
-  opacity: 0.84,
+const orangeHandMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uAccent: { value: new THREE.Color(PALETTE.accent) },
+    uLightDirection: { value: new THREE.Vector3(-4, 3, 1).normalize() },
+  },
+  vertexShader: `
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      vWorldNormal = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uAccent;
+    uniform vec3 uLightDirection;
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      vec3 normal = normalize(vWorldNormal);
+      if (!gl_FrontFacing) normal *= -1.0;
+      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+      vec3 halfDirection = normalize(uLightDirection + viewDirection);
+
+      float diffuse = max(dot(normal, uLightDirection), 0.0);
+      float specular = pow(max(dot(normal, halfDirection), 0.0), 30.0);
+      float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.3);
+      float light = 0.012 + diffuse * 0.045 + rim * 0.34 + specular * 0.9;
+
+      gl_FragColor = vec4(uAccent * light, 1.0);
+    }
+  `,
+  side: THREE.DoubleSide,
   depthWrite: true,
+  transparent: false,
+  toneMapped: false,
+});
+
+/* The light section deliberately stays neutral silver. Only the early dark
+   scene receives the orange Lenis-style lighting. */
+const lateSilverHandMaterial = new THREE.MeshPhysicalMaterial({
+  color: "#9f9996",
+  emissive: "#000000",
+  emissiveIntensity: 0,
+  metalness: 1,
+  roughness: 0.16,
+  clearcoat: 0.15,
+  clearcoatRoughness: 0.08,
+  envMapIntensity: 1.45,
   side: THREE.DoubleSide,
 });
 
-/* The light section uses the same exact arm.glb with a fully opaque physical
-   orange metal. Opacity there would expose the model's internal surfaces. */
-const lateOrangeHandMaterial = new THREE.MeshPhysicalMaterial({
-  color: PALETTE.accent,
-  metalness: 0.76,
-  roughness: 0.28,
-  clearcoat: 0.48,
-  clearcoatRoughness: 0.2,
-  side: THREE.DoubleSide,
-});
+function SilverChromeEnvironment() {
+  const gl = useThree((state) => state.gl);
+
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const environmentTarget = pmrem.fromScene(room, 0.03);
+    const environment = environmentTarget.texture;
+
+    lateSilverHandMaterial.envMap = environment;
+    lateSilverHandMaterial.needsUpdate = true;
+
+    room.dispose();
+    pmrem.dispose();
+
+    return () => {
+      if (lateSilverHandMaterial.envMap === environment) {
+        lateSilverHandMaterial.envMap = null;
+        lateSilverHandMaterial.needsUpdate = true;
+      }
+      environmentTarget.dispose();
+    };
+  }, [gl]);
+
+  return null;
+}
 
 /** Center + scale factors so an object's longest axis spans `target` world units.
     No reparenting here — mutating the cached GLTF graph inside useMemo breaks
@@ -485,106 +562,61 @@ function useChromeArm(
   return { scene: cloned, ...normalized };
 }
 
-type EarlyHandFrame = [number, number, number, number, number, number, number, number];
+type EarlyHandFrame = [number, number, number, number, number, number, number];
 
-/* Lenis hero path: rise from the lower-left, cross toward center, then roll
-   onto its side alongside the sticky Why headline before leaving the scene. */
+/* Lenis runtime poses, expressed as viewport-relative positions and raw-GLB
+   scale ratios: progress, x/W, y/H, rawScale/H, rotation XYZ. */
 const EARLY_HAND_KEYFRAMES: EarlyHandFrame[] = [
-  [0, -1.58, -2.28, 0.48, 0.2, -0.28, 1.46, 0.32],
-  [0.18, -1.12, -1.72, 0.46, 0.12, -0.16, 1.34, 0.35],
-  [0.4, 0.18, -1.08, 0.38, -0.08, 0.02, 1.12, 0.37],
-  [0.66, 0.02, -0.2, 0.2, -0.16, 0.84, 0.82, 0.32],
-  [0.84, 0.38, 0.08, 0.16, -0.25, 1.1, 0.7, 0.2],
-  [1, 2.65, -0.02, 0.12, -0.32, 1.38, 0.68, 0],
+  [0, -0.1, -1.75, 0.045, 0, Math.PI / 2, 0],
+  [0.4, 0.15, -0.4, 0.02, -Math.PI / 4, -3 * Math.PI / 4, -Math.PI / 4],
+  [0.8, 0.15, -0.4, 0.02, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
+  [1, 0.68, -0.4, 0.018, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
 ];
 
-function catmullRom(a: number, b: number, c: number, d: number, t: number) {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return 0.5 * (
-    2 * b +
-    (-a + c) * t +
-    (2 * a - 5 * b + 4 * c - d) * t2 +
-    (-a + 3 * b - 3 * c + d) * t3
-  );
-}
+const RAW_ARM_HEIGHT = 73.3446655;
+const NORMALIZED_ARM_HEIGHT = 5.15;
 
-function sampleEarlyHand(p: number) {
+function sampleEarlyHand(p: number, width: number, height: number) {
   let index = 0;
   while (index < EARLY_HAND_KEYFRAMES.length - 2 && p > EARLY_HAND_KEYFRAMES[index + 1][0]) {
     index++;
   }
   const from = EARLY_HAND_KEYFRAMES[index];
   const to = EARLY_HAND_KEYFRAMES[index + 1];
-  const before = EARLY_HAND_KEYFRAMES[Math.max(0, index - 1)];
-  const after = EARLY_HAND_KEYFRAMES[Math.min(EARLY_HAND_KEYFRAMES.length - 1, index + 2)];
   const t = THREE.MathUtils.clamp((p - from[0]) / Math.max(0.001, to[0] - from[0]), 0, 1);
-  const value = (slot: number) => catmullRom(before[slot], from[slot], to[slot], after[slot], t);
   return {
-    x: value(1),
-    y: value(2),
-    rx: value(3),
-    ry: value(4),
-    rz: value(5),
-    scale: value(6),
-    opacity: THREE.MathUtils.clamp(value(7), 0, 1),
+    x: THREE.MathUtils.lerp(from[1], to[1], t) * width,
+    y: THREE.MathUtils.lerp(from[2], to[2], t) * height,
+    scale:
+      THREE.MathUtils.lerp(from[3], to[3], t) * height * RAW_ARM_HEIGHT /
+      NORMALIZED_ARM_HEIGHT,
+    rx: THREE.MathUtils.lerp(from[4], to[4], t),
+    ry: THREE.MathUtils.lerp(from[5], to[5], t),
+    rz: THREE.MathUtils.lerp(from[6], to[6], t),
   };
 }
 
 function EarlyHandRig() {
   const group = useRef<THREE.Group>(null);
-  const orangeLight = useRef<THREE.PointLight>(null);
+  const { width, height } = useThree((state) => state.viewport);
   const arm = useChromeArm(ARM_MODEL_URL, 5.15, orangeHandMaterial);
-  const motion = useRef({ ...sampleEarlyHand(0) });
 
-  useFrame(({ clock }, delta) => {
+  useFrame(() => {
     const rig = group.current;
     if (!rig) return;
-    const target = sampleEarlyHand(earlyHandProgress.value);
-    const pose = motion.current;
-    const follow = 9.5;
-    pose.x = THREE.MathUtils.damp(pose.x, target.x, follow, delta);
-    pose.y = THREE.MathUtils.damp(pose.y, target.y, follow, delta);
-    pose.rx = THREE.MathUtils.damp(pose.rx, target.rx, follow, delta);
-    pose.ry = THREE.MathUtils.damp(pose.ry, target.ry, follow, delta);
-    pose.rz = THREE.MathUtils.damp(pose.rz, target.rz, follow, delta);
-    pose.scale = THREE.MathUtils.damp(pose.scale, target.scale, follow, delta);
-    pose.opacity = THREE.MathUtils.damp(pose.opacity, target.opacity, 7.5, delta);
-    const breathe = Math.sin(clock.elapsedTime * 0.72);
-
-    rig.position.set(pose.x + breathe * 0.018, pose.y + breathe * 0.035, 0.1);
-    rig.rotation.set(pose.rx + breathe * 0.008, pose.ry, pose.rz - breathe * 0.008);
+    const pose = sampleEarlyHand(earlyHandProgress.value, width, height);
+    rig.position.set(pose.x, pose.y, 0);
+    rig.rotation.set(pose.rx, pose.ry, pose.rz);
     rig.scale.setScalar(pose.scale);
-    rig.visible = pose.opacity > 0.01 && lightProgress.value < 0.02;
-    orangeHandMaterial.opacity = THREE.MathUtils.clamp(pose.opacity * 2.05, 0, 0.74);
-    if (orangeLight.current) {
-      orangeLight.current.position.set(
-        pose.x - 1.1 + breathe * 0.2,
-        pose.y + 1.8,
-        3.8,
-      );
-      orangeLight.current.intensity = pose.opacity * 8;
-    }
+    rig.visible = earlyHandProgress.value < 0.995 && lightProgress.value < 0.02;
   });
 
   return (
-    <>
-      <pointLight
-        ref={orangeLight}
-        color={PALETTE.accent}
-        position={[-2.6, -0.4, 3.8]}
-        intensity={3.5}
-        distance={9}
-        decay={2}
-      />
-      <group ref={group}>
-        <group rotation={[0.5, Math.PI, 0]}>
-          <group scale={arm.scale} position={arm.position}>
-            <primitive object={arm.scene} />
-          </group>
-        </group>
+    <group ref={group}>
+      <group scale={arm.scale} position={arm.position}>
+        <primitive object={arm.scene} />
       </group>
-    </>
+    </group>
   );
 }
 
@@ -626,7 +658,7 @@ function sampleHand(p: number) {
 
 function HandRig() {
   const group = useRef<THREE.Group>(null);
-  const arm = useChromeArm(ARM_MODEL_URL, 5.05, lateOrangeHandMaterial);
+  const arm = useChromeArm(ARM_MODEL_URL, 5.05, lateSilverHandMaterial);
 
   useFrame(({ clock }) => {
     const g = group.current;
@@ -664,6 +696,7 @@ function Scene() {
       <ambientLight color="#a29a92" intensity={1} />
       <directionalLight color="#efefef" position={[-6, 5, 2]} intensity={1} />
       <directionalLight color="#efefef" position={[8, -3, 4]} intensity={1} />
+      <SilverChromeEnvironment />
       <ScrollSync />
       <Starfield />
       <LightParticles />

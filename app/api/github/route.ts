@@ -11,6 +11,8 @@ export async function GET() {
   return NextResponse.json(summary, {
     headers: {
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      /* Raw data endpoint, not a page — keep it out of search and AI indexes. */
+      "X-Robots-Tag": "noindex",
     },
   });
 }
