@@ -3,13 +3,11 @@
 import { useRef } from "react";
 import { ScrollTrigger, gsap, useGSAP } from "@/lib/animation";
 
-const ZOOM_END = 0.4; // lead-in "web experiences" composition zoom completes
-const APPEAR_END = 0.26; // ENTER NEXOR has emerged to its readable size
-const DWELL_END = 0.33; // ...holds a short readable beat, then the dive begins
-                        // (overlapping the tail of the lead-in fade, so the
-                        // wordmark never sits dead-still for long)
-const DIVE_END = 0.95; // the dive into the T has fully flooded the frame cream
-const FLOOD_SCALE = 24; // scale at which the cream T covers the whole viewport
+const ZOOM_END = 0.3; // lead-in "web experiences" composition zoom completes
+const ENTER_START = 0.05; // invisible seed size the ENTER NEXOR zoom grows from
+                          // (opacity fades it in as it enlarges past the lead-in)
+const FLOOD_SCALE = 20; // scale at which the cream T covers the whole viewport
+const BG_FLIP_AT = 0.99; // frame is solid cream by here — paint the bg to match
 
 /**
  * Faithful Lenis solution takeover: a long scroll section with one sticky
@@ -39,14 +37,22 @@ export default function Rethink() {
          are layout metrics (transform-immune), so this reads the T's real
          position even while rt-enter itself sits at scale(0). Re-measured on
          every ScrollTrigger refresh, since font-size is viewport-relative. */
+      /* T-centre, kept as strings so updateProgress can build the transform
+         directly (see there) as well as feed transform-origin. */
+      let originX = "50%";
+      let originY = "45%";
+      /* Latched cream-flood state, with hysteresis, so it can't strobe. */
+      let bgCream = false;
       const measureOrigin = () => {
         if (!enterEl || !tEl || enterEl.offsetWidth === 0) return;
         const xPercent =
           ((tEl.offsetLeft + tEl.offsetWidth / 2) / enterEl.offsetWidth) * 100;
         const yPercent =
           ((tEl.offsetTop + tEl.offsetHeight / 2) / enterEl.offsetHeight) * 100;
-        enterEl.style.setProperty("--rethink-origin-x", `${xPercent}%`);
-        enterEl.style.setProperty("--rethink-origin-y", `${yPercent}%`);
+        originX = `${xPercent}%`;
+        originY = `${yPercent}%`;
+        enterEl.style.setProperty("--rethink-origin-x", originX);
+        enterEl.style.setProperty("--rethink-origin-y", originY);
       };
 
       const updateProgress = () => {
@@ -66,27 +72,27 @@ export default function Rethink() {
         const zoomProgress = clamp(progress / ZOOM_END);
         section.style.setProperty("--rethink-progress-1", String(zoomProgress));
 
-        /* ENTER NEXOR emerges (ease-out settle to its readable size), dwells a
-           beat, then dives INTO the T. The dive is exponential so it accelerates
-           like a camera flying into the glyph; at FLOOD_SCALE the solid cream T
-           covers the whole viewport — that flood is the entire transition. */
-        let enterScale: number;
-        if (progress <= APPEAR_END) {
-          const t = progress / APPEAR_END;
-          enterScale = 1 - Math.pow(1 - t, 3);
-        } else if (progress <= DWELL_END) {
-          enterScale = 1;
-        } else if (progress <= DIVE_END) {
-          const t = (progress - DWELL_END) / (DIVE_END - DWELL_END);
-          enterScale = Math.pow(FLOOD_SCALE, t);
-        } else {
-          enterScale = FLOOD_SCALE;
+        /* ENTER NEXOR is ONE single, continuous exponential zoom straight
+           through the T. An exponential means a constant *perceived* zoom rate
+           (each scroll unit multiplies the size by the same factor), so it can
+           never plateau or "stick" at any size — it just flies in cleanly in
+           one motion. It seeds from an invisible ENTER_START, passes through
+           readable (~1) around the middle without ever pausing, and reaches the
+           cream flood right at the section end. No emerge/dwell/dive stages to
+           create a flat spot to grind against. */
+        const enterScale = ENTER_START * Math.pow(FLOOD_SCALE / ENTER_START, progress);
+        const enterOpacity = clamp((progress - 0.1) / 0.14);
+        /* Write the transform straight onto the element, not only through a CSS
+           custom property. A will-change:transform layer driven purely by a
+           changing variable can skip a compositor update on a fast scroll-
+           direction reversal and leave a stale frame — that is the "only the T
+           is left" glitch on scroll-back. An explicit inline transform forces
+           the update every tick, so a reversal is always clean. */
+        if (enterEl) {
+          enterEl.style.transform =
+            `translate(calc(-1 * ${originX}), calc(-1 * ${originY})) scale(${enterScale})`;
+          enterEl.style.opacity = String(enterOpacity);
         }
-        section.style.setProperty("--rt-enter-scale", String(enterScale));
-        section.style.setProperty(
-          "--rt-enter-opacity",
-          String(clamp((progress / APPEAR_END) * 2.5)),
-        );
 
         /* rt-first/rt-second exit through rethink-inner's clipped edges as
            this translates/scales, and used to hit that overflow:hidden clip
@@ -108,8 +114,13 @@ export default function Rethink() {
         /* Once the cream T has fully flooded the frame, paint the section (and
            page) cream so the final stretch hands seamlessly to the light
            section below — the flip is invisible because the frame is already
-           solid cream at that point. */
-        if (progress >= DIVE_END) {
+           solid cream at that point. Hysteresis (latch on at BG_FLIP_AT, off
+           only well below it) stops the whole-page background from strobing —
+           and taking the fixed Clawd sprite's layer with it — if the scroll
+           settles right on the boundary. */
+        if (progress >= BG_FLIP_AT) bgCream = true;
+        else if (progress < BG_FLIP_AT - 0.04) bgCream = false;
+        if (bgCream) {
           section.style.backgroundColor = "currentColor";
           document.body.style.setProperty("--page-bg", "#f2ede6");
         } else {
@@ -125,6 +136,10 @@ export default function Rethink() {
         end: "bottom top",
         invalidateOnRefresh: true,
         onUpdate: updateProgress,
+        /* Force a clean terminal state at both edges too, so a fast reversal
+           that outran the last onUpdate can't strand a half-scaled wordmark. */
+        onLeave: updateProgress,
+        onLeaveBack: updateProgress,
         onRefresh: () => {
           measureOrigin();
           updateProgress();
@@ -142,6 +157,8 @@ export default function Rethink() {
         section.style.removeProperty("--rethink-text-fade");
         section.style.removeProperty("background-color");
         document.body.style.removeProperty("--page-bg");
+        enterEl?.style.removeProperty("transform");
+        enterEl?.style.removeProperty("opacity");
         enterEl?.style.removeProperty("--rethink-origin-x");
         enterEl?.style.removeProperty("--rethink-origin-y");
       };

@@ -632,7 +632,7 @@ main {
   --rt-enter-opacity: 0;
   --rethink-text-fade: 1;
   position: relative;
-  height: 360vh;
+  height: 320vh;
   color: var(--light);
 }
 
@@ -725,12 +725,19 @@ main {
     )
     scale(var(--rt-enter-scale, 0));
   transform-origin: var(--rethink-origin-x, 50%) var(--rethink-origin-y, 45%);
-  will-change: transform, opacity;
+  /* Deliberately NOT will-change: transform. A promoted layer gets rasterized
+     (and tiled) at the dive's huge scale, where only the on-screen T tile is
+     actually rendered; scaling back down on a *reverse* scroll then leaves the
+     other letters' tiles blank — that is the "only the T comes back" bug. With
+     no promotion the browser re-rasterizes at the current scale every frame, so
+     the whole wordmark is always painted. It stays cheap: at large scale the
+     glyph is a near-solid cream fill, and Rethink.tsx writes the transform
+     inline, so the update is deterministic in both directions. */
 }
 
 @media (min-width: 800px) {
   .rethink {
-    height: 620vh;
+    height: 500vh;
   }
 
   .rethink-inner {
@@ -1175,7 +1182,11 @@ main {
   display: inline-block;
 }
 
-@media (max-width: 899px), (max-height: 640px) {
+/* Clawd is a desktop-only companion (drag/hover), so he steps out below the
+   mobile breakpoint — but he must NOT vanish just because a desktop window is
+   a little short, which is what the old max-height:640 clause did and what made
+   him "sometimes" disappear. A 96px corner sprite is fine on short viewports. */
+@media (max-width: 899px) {
   .clawd-pet {
     display: none;
   }

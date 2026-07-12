@@ -19,9 +19,9 @@ const handProgress: Progress = { value: 0 };
     flood and simply appears — already pointing up — as the Solution section
     scrolls in. */
 const handHidden: Progress = { value: 0 };
-/** Progress at which the flood is solid cream (matches Rethink's DIVE_END); the
-    hand's visibility gate lifts here, safely behind that cream. */
-const HAND_REVEAL_AT = 0.96;
+/** Progress at which the flood is solid cream (matches Rethink's BG_FLIP_AT);
+    the hand's visibility gate lifts here, safely behind that cream. */
+const HAND_REVEAL_AT = 0.99;
 /** Signed, lightly smoothed px/frame scroll speed — positive while scrolling
     down. Drives the starfield's warp-tunnel travel and streak length. */
 const warpVelocity: Progress = { value: 0 };
@@ -467,7 +467,7 @@ const HAND_KEYFRAMES: Array<
   [0.27, 0.7, -0.8, 0.16, 0.05, 0.02, 1.04], // POINT pose
   [0.34, 0.65, -1.55, 0.08, 3.49, -0.28, 1.34], // Lenis light-start pose
   [0.42, 0.0, -1.0, 0.0, -0.244, -0.279, 1.2], // exact Heat start
-  [1.0, 1.8, -0.78, 0.0, -12.217, -0.279, 0.78], // page end: -700deg Y, nudged right, less arm
+  [1.0, 1.7, -1.15, 0.0, -12.217, -0.279, 1.28], // page end: -700deg Y, matched to lenis.dev: bigger hand, finger high-right
 ];
 
 /** Progress value at which the visible pose switches from OPEN to POINT —

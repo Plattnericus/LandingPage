@@ -53,6 +53,11 @@ export default function ClawdPet() {
       if (!cancelled) setReady(true);
     };
 
+    /* Absolute guarantee: reveal Clawd within 2.5s even if the sprite request
+       stalls without ever firing load *or* error (a hung fetch, not a clean
+       failure) — he must never be trapped permanently unmounted behind it. */
+    const hardReady = window.setTimeout(markReady, 2500);
+
     const idleImg = new Image();
     idleImg.onload = markReady;
     idleImg.onerror = () => {
@@ -92,6 +97,7 @@ export default function ClawdPet() {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(hardReady);
     };
   }, [introDone]);
 
@@ -111,9 +117,36 @@ export default function ClawdPet() {
     };
     scheduleFlavor();
 
+    /* Hero-corner hide — Clawd steps aside while the hero owns the top-right
+       corner, then re-appears past it. Polled from the hero's real on-screen
+       position (in the scroll interval below) rather than a ScrollTrigger
+       toggle: a toggle strands Clawd invisible whenever the sprite becomes
+       ready only after the user has already scrolled past the hero, or when a
+       ScrollTrigger.refresh (font load, the rethink height, a resize) fires
+       mid-scroll. A getBoundingClientRect read is always truthful, so the
+       visibility self-heals on the very next tick and can never get stuck. */
+    const heroEl = document.querySelector(".hero");
+    let heroHidden: boolean | null = null;
+    const syncHero = (instant = false) => {
+      const root = rootRef.current;
+      if (!root || !heroEl) return;
+      const bottom = heroEl.getBoundingClientRect().bottom;
+      /* Hysteresis dead-zone around the boundary: a scroll that settles right on
+         the hero edge can't strobe Clawd's fade in and out. */
+      let shouldHide = heroHidden ?? bottom > 0;
+      if (bottom > 8) shouldHide = true;
+      else if (bottom < -8) shouldHide = false;
+      if (shouldHide === heroHidden) return;
+      heroHidden = shouldHide;
+      if (instant) gsap.set(root, { autoAlpha: shouldHide ? 0 : 1 });
+      else gsap.to(root, { autoAlpha: shouldHide ? 0 : 1, duration: 0.35, overwrite: true });
+    };
+    syncHero(true);
+
     /* fast scrolling → a random work clip per burst (IDLE stays the baseline) */
     let velocityStart = 0;
     const onScroll = () => {
+      syncHero();
       const velocity = Math.abs(lenisRef.current?.velocity ?? 0);
       if (velocity > 40) {
         if (!velocityStart) velocityStart = performance.now();
@@ -148,32 +181,6 @@ export default function ClawdPet() {
         }),
       ];
     });
-
-    /* the hero occupies the same top-right corner Clawd spawns in — step
-       aside while it's on screen instead of overlapping the wordmark. Set
-       hidden synchronously rather than waiting for the trigger's first
-       onToggle: Clawd only ever becomes ready right after the intro loader
-       finishes, and scrolling is locked for the whole intro, so the hero is
-       *always* on screen (scrollY 0) at that exact moment — no need for an
-       async round-trip to know that, and no risk of a visible flash on a
-       slow first ScrollTrigger refresh. */
-    const hero = document.querySelector(".hero");
-    if (hero) {
-      const root = rootRef.current;
-      if (root) gsap.set(root, { autoAlpha: 0 });
-      triggers.push(
-        ScrollTrigger.create({
-          trigger: hero,
-          start: "top top",
-          end: "bottom top",
-          onToggle: (self) => {
-            if (!rootRef.current) return;
-            const target = self.isActive ? 0 : 1;
-            gsap.to(rootRef.current, { autoAlpha: target, duration: 0.35, overwrite: true });
-          },
-        }),
-      );
-    }
 
     /* fall back to IDLE whenever the active state expires */
     const expiry = window.setInterval(() => {
