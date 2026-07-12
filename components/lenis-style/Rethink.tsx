@@ -3,8 +3,8 @@
 import { useRef } from "react";
 import { ScrollTrigger, gsap, useGSAP } from "@/lib/animation";
 
-const ZOOM_END = 0.3; // lead-in "web experiences" composition zoom completes
-const ENTER_START = 0.05; // invisible seed size the ENTER NEXOR zoom grows from
+const ZOOM_END = 0.8; // lead-in remains visible deep into ENTER NEXOR, like Lenis
+const ENTER_START = 0.08; // visible seed size the ENTER NEXOR zoom grows from
                           // (opacity fades it in as it enlarges past the lead-in)
 const FLOOD_SCALE = 20; // scale at which the cream T covers the whole viewport
 const BG_FLIP_AT = 0.99; // frame is solid cream by here — paint the bg to match
@@ -29,7 +29,6 @@ export default function Rethink() {
       if (!section) return;
 
       const clamp = gsap.utils.clamp(0, 1);
-      const rtFirst = section.querySelector<HTMLElement>(".rt-first");
       const enterEl = enterRef.current;
       const tEl = tRef.current;
 
@@ -61,9 +60,11 @@ export default function Rethink() {
         const bounds = section.getBoundingClientRect();
         const sectionTop = bounds.top + scroll;
 
-        /* Exact lenis.dev map: begin half a viewport into the section and
-           finish when the section bottom is one viewport away. */
-        const start = sectionTop + viewportHeight * 0.5;
+        /* Start almost as soon as the sticky composition arrives. Lenis lets
+           ENTER grow underneath the preceding words instead of waiting for
+           that composition to leave first. The terminal T flood stays pinned
+           to the same section end. */
+        const start = sectionTop + viewportHeight * 0.05;
         const end = sectionTop + bounds.height - viewportHeight;
         const progress = clamp((scroll - start) / Math.max(1, end - start));
 
@@ -81,7 +82,7 @@ export default function Rethink() {
            cream flood right at the section end. No emerge/dwell/dive stages to
            create a flat spot to grind against. */
         const enterScale = ENTER_START * Math.pow(FLOOD_SCALE / ENTER_START, progress);
-        const enterOpacity = clamp((progress - 0.1) / 0.14);
+        const enterOpacity = clamp(progress / 0.045);
         /* Write the transform straight onto the element, not only through a CSS
            custom property. A will-change:transform layer driven purely by a
            changing variable can skip a compositor update on a fast scroll-
@@ -94,22 +95,11 @@ export default function Rethink() {
           enterEl.style.opacity = String(enterOpacity);
         }
 
-        /* rt-first/rt-second exit through rethink-inner's clipped edges as
-           this translates/scales, and used to hit that overflow:hidden clip
-           as a hard, fully-opaque mid-glyph cutoff — the block's own resting
-           padding to the edge is a small fraction of its height, so clipping
-           starts almost as soon as it moves. offsetTop/offsetHeight are
-           layout metrics (transform doesn't affect them), so this reads the
-           untransformed gap to the clip edge correctly no matter the current
-           scroll position or viewport size, and stays right across resizes.
-           Fading fully out before that point removes the clip edge entirely. */
-        if (rtFirst && rtFirst.offsetHeight > 0) {
-          const clipOnset = rtFirst.offsetTop / rtFirst.offsetHeight;
-          const fadeStart = clipOnset * 0.5;
-          const fadeSpan = Math.max(0.001, clipOnset - fadeStart);
-          const textFade = 1 - clamp((zoomProgress - fadeStart) / fadeSpan);
-          section.style.setProperty("--rethink-text-fade", String(textFade));
-        }
+        /* Keep the lead-in visible while ENTER grows. Its oversized words are
+           intentionally clipped by the sticky viewport before fading near the
+           end of their zoom — this is the characteristic Lenis overlap. */
+        const textFade = 1 - clamp((zoomProgress - 0.82) / 0.16);
+        section.style.setProperty("--rethink-text-fade", String(textFade));
 
         /* Once the cream T has fully flooded the frame, paint the section (and
            page) cream so the final stretch hands seamlessly to the light

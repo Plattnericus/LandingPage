@@ -12,6 +12,7 @@ type Progress = { value: number };
 /* module-level singletons: written once per frame, read by every child */
 const lightProgress: Progress = { value: 0 };
 const handProgress: Progress = { value: 0 };
+const earlyHandProgress: Progress = { value: 0 };
 /** 1 while the rethink zoom-through-the-T is still on screen. The hand keeps
     its normal pose schedule underneath, but is rendered invisible for the whole
     dive so it never intrudes on that transition; the gate only lifts once the
@@ -42,6 +43,8 @@ useGLTF.preload(ARM_POINT_URL);
 /* ------------------------------------------------------------------ */
 
 function ScrollSync() {
+  const hero = useRef<HTMLElement | null>(null);
+  const why = useRef<HTMLElement | null>(null);
   const rethink = useRef<HTMLElement | null>(null);
   const heat = useRef<HTMLElement | null>(null);
   const lastScrollY = useRef<number | null>(null);
@@ -57,6 +60,15 @@ function ScrollSync() {
     lastScrollY.current = scrollY;
     warpVelocity.value = THREE.MathUtils.lerp(warpVelocity.value, delta, 0.18);
 
+    if (!hero.current) hero.current = document.querySelector<HTMLElement>(".hero");
+    if (!why.current) why.current = document.querySelector<HTMLElement>(".why");
+    if (hero.current && why.current) {
+      const whyBounds = why.current.getBoundingClientRect();
+      const whyTop = whyBounds.top + scrollY;
+      const earlyEnd = whyTop + whyBounds.height * 0.72;
+      earlyHandProgress.value = THREE.MathUtils.clamp(scrollY / Math.max(1, earlyEnd), 0, 1);
+    }
+
     if (!rethink.current) {
       rethink.current = document.querySelector<HTMLElement>(".rethink");
       if (!rethink.current) return;
@@ -71,7 +83,7 @@ function ScrollSync() {
     const heatTop = heatBounds.top + scrollY;
     const viewportHeight = window.innerHeight;
     const docEnd = document.documentElement.scrollHeight - window.innerHeight;
-    const solutionStart = top + viewportHeight * 0.5;
+    const solutionStart = top + viewportHeight * 0.05;
     const solutionEnd = top + bounds.height - viewportHeight;
     const solutionProgress = THREE.MathUtils.clamp(
       (scrollY - solutionStart) / Math.max(1, solutionEnd - solutionStart),
@@ -399,6 +411,60 @@ const chromeMaterial = new THREE.MeshStandardMaterial({
   side: THREE.DoubleSide,
 });
 
+const orangeHandMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uAccent: { value: new THREE.Color(PALETTE.accent) },
+    uLightPosition: { value: new THREE.Vector3(-3.5, 4.5, 5.5) },
+    uOpacity: { value: 0.34 },
+    uTime: { value: 0 },
+  },
+  vertexShader: `
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      vWorldNormal = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uAccent;
+    uniform vec3 uLightPosition;
+    uniform float uOpacity;
+    uniform float uTime;
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      vec3 normal = normalize(vWorldNormal);
+      if (!gl_FrontFacing) normal *= -1.0;
+
+      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+      vec3 lightDirection = normalize(uLightPosition - vWorldPosition);
+      vec3 halfDirection = normalize(lightDirection + viewDirection);
+
+      float diffuse = max(dot(normal, lightDirection), 0.0);
+      float specular = pow(max(dot(normal, halfDirection), 0.0), 68.0);
+      float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.15);
+      float pulse = 0.94 + sin(uTime * 0.72) * 0.06;
+
+      vec3 darkMetal = vec3(0.022, 0.018, 0.016) * (0.28 + diffuse * 0.44);
+      vec3 warmMetal = uAccent * diffuse * 0.46;
+      vec3 metallicHighlight = mix(uAccent, vec3(1.0, 0.68, 0.42), 0.22) * specular * 1.34;
+      vec3 orangeGlow = uAccent * (rim * 1.12 * pulse + specular * 0.44);
+      float alpha = uOpacity * (0.76 + rim * 0.24);
+
+      gl_FragColor = vec4(darkMetal + warmMetal + metallicHighlight + orangeGlow, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: true,
+  side: THREE.FrontSide,
+  toneMapped: false,
+});
+
 /** Center + scale factors so an object's longest axis spans `target` world units.
     No reparenting here — mutating the cached GLTF graph inside useMemo breaks
     under StrictMode double-invocation; transforms are applied via group props.
@@ -427,20 +493,114 @@ function useNormalized(object: THREE.Object3D, target: number) {
     The cached GLTF scene is cloned per mount: attaching the shared instance
     directly breaks under StrictMode/HMR remounts (the unmounting tree detaches
     it from its new parent). */
-function useChromeArm(url: string, targetHeight: number) {
+function useChromeArm(
+  url: string,
+  targetHeight: number,
+  material: THREE.Material = chromeMaterial,
+) {
   const { scene } = useGLTF(url);
   const cloned = useMemo(() => {
     const copy = cloneSkeleton(scene);
     copy.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.material = chromeMaterial;
+        child.material = material;
         child.frustumCulled = false;
       }
     });
     return copy;
-  }, [scene]);
+  }, [scene, material]);
   const normalized = useNormalized(cloned, targetHeight);
   return { scene: cloned, ...normalized };
+}
+
+type EarlyHandFrame = [number, number, number, number, number, number, number, number];
+
+/* Lenis hero path: rise from the lower-left, cross toward center, then roll
+   onto its side alongside the sticky Why headline before leaving the scene. */
+const EARLY_HAND_KEYFRAMES: EarlyHandFrame[] = [
+  [0, -1.58, -2.28, 0.48, 0.2, -0.28, 1.46, 0.32],
+  [0.18, -1.12, -1.72, 0.46, 0.12, -0.16, 1.34, 0.35],
+  [0.4, 0.18, -1.08, 0.38, -0.08, 0.02, 1.12, 0.37],
+  [0.66, 0.02, -0.2, 0.2, -0.16, 0.84, 0.82, 0.32],
+  [0.84, 0.38, 0.08, 0.16, -0.25, 1.1, 0.7, 0.2],
+  [1, 2.65, -0.02, 0.12, -0.32, 1.38, 0.68, 0],
+];
+
+function catmullRom(a: number, b: number, c: number, d: number, t: number) {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return 0.5 * (
+    2 * b +
+    (-a + c) * t +
+    (2 * a - 5 * b + 4 * c - d) * t2 +
+    (-a + 3 * b - 3 * c + d) * t3
+  );
+}
+
+function sampleEarlyHand(p: number) {
+  let index = 0;
+  while (index < EARLY_HAND_KEYFRAMES.length - 2 && p > EARLY_HAND_KEYFRAMES[index + 1][0]) {
+    index++;
+  }
+  const from = EARLY_HAND_KEYFRAMES[index];
+  const to = EARLY_HAND_KEYFRAMES[index + 1];
+  const before = EARLY_HAND_KEYFRAMES[Math.max(0, index - 1)];
+  const after = EARLY_HAND_KEYFRAMES[Math.min(EARLY_HAND_KEYFRAMES.length - 1, index + 2)];
+  const t = THREE.MathUtils.clamp((p - from[0]) / Math.max(0.001, to[0] - from[0]), 0, 1);
+  const value = (slot: number) => catmullRom(before[slot], from[slot], to[slot], after[slot], t);
+  return {
+    x: value(1),
+    y: value(2),
+    rx: value(3),
+    ry: value(4),
+    rz: value(5),
+    scale: value(6),
+    opacity: THREE.MathUtils.clamp(value(7), 0, 1),
+  };
+}
+
+function EarlyHandRig() {
+  const group = useRef<THREE.Group>(null);
+  const arm = useChromeArm(ARM_OPEN_URL, 5.15, orangeHandMaterial);
+  const motion = useRef({ ...sampleEarlyHand(0) });
+
+  useFrame(({ clock }, delta) => {
+    const rig = group.current;
+    if (!rig) return;
+    const target = sampleEarlyHand(earlyHandProgress.value);
+    const pose = motion.current;
+    const follow = 9.5;
+    pose.x = THREE.MathUtils.damp(pose.x, target.x, follow, delta);
+    pose.y = THREE.MathUtils.damp(pose.y, target.y, follow, delta);
+    pose.rx = THREE.MathUtils.damp(pose.rx, target.rx, follow, delta);
+    pose.ry = THREE.MathUtils.damp(pose.ry, target.ry, follow, delta);
+    pose.rz = THREE.MathUtils.damp(pose.rz, target.rz, follow, delta);
+    pose.scale = THREE.MathUtils.damp(pose.scale, target.scale, follow, delta);
+    pose.opacity = THREE.MathUtils.damp(pose.opacity, target.opacity, 7.5, delta);
+    const breathe = Math.sin(clock.elapsedTime * 0.72);
+
+    rig.position.set(pose.x + breathe * 0.018, pose.y + breathe * 0.035, 0.1);
+    rig.rotation.set(pose.rx + breathe * 0.008, pose.ry, pose.rz - breathe * 0.008);
+    rig.scale.setScalar(pose.scale);
+    rig.visible = pose.opacity > 0.01 && lightProgress.value < 0.02;
+    orangeHandMaterial.uniforms.uOpacity.value = pose.opacity;
+    orangeHandMaterial.uniforms.uTime.value = clock.elapsedTime;
+    orangeHandMaterial.uniforms.uLightPosition.value.set(
+      pose.x - 1.25 + breathe * 0.2,
+      pose.y + 2.2,
+      5.5,
+    );
+  });
+
+  return (
+    <group ref={group}>
+      <group rotation={[0.5, Math.PI, 0]}>
+        <group scale={arm.scale} position={arm.position}>
+          <primitive object={arm.scene} />
+        </group>
+      </group>
+    </group>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -550,6 +710,7 @@ function Scene() {
       <ScrollSync />
       <Starfield />
       <LightParticles />
+      {withHand && <EarlyHandRig />}
       {withHand && <HandRig />}
     </>
   );

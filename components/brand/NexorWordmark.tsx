@@ -31,6 +31,12 @@ export default function NexorWordmark({ variant }: { variant: "hero" | "intro" }
         <span
           className={`intro-glyph-slot${index % 2 === 1 ? " intro-glyph-slot-lower" : ""}`}
           key={letter}
+          style={
+            {
+              "--intro-column": index + 1,
+              "--intro-row": index % 2 === 1 ? 2 : 1,
+            } as CSSProperties
+          }
         >
           <span className="intro-glyph" style={{ "--intro-index": index + 1 } as CSSProperties}>
             <BrandGlyph letter={letter} />

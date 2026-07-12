@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import NexorWordmark from "@/components/brand/NexorWordmark";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
-const REVEAL_AT_MS = 1000;
-const EXIT_EARLIEST_MS = 2500;
-const MERGE_DELAY_MS = 75;
-const EXIT_DURATION_MS = 1500;
-const MAX_READY_WAIT_MS = 4200;
+const REVEAL_AT_MS = 180;
+const EXIT_EARLIEST_MS = 1900;
+const MERGE_DELAY_MS = 60;
+const EXIT_DURATION_MS = 1400;
+const MAX_READY_WAIT_MS = 3400;
 
 /**
  * Lenis-style intro architecture using the site's own NEXOR wordmark:
