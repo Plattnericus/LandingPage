@@ -628,7 +628,8 @@ main {
 
 .rethink {
   --rethink-progress-1: 0;
-  --rethink-progress-2: 0;
+  --rt-enter-scale: 0;
+  --rt-enter-opacity: 0;
   --rethink-text-fade: 1;
   position: relative;
   height: 500vh;
@@ -643,22 +644,10 @@ main {
   overflow: hidden;
   /* rt-first/rt-second exit past this box's edges as they translate/scale
      with scroll — contain: paint keeps that clip reliable (no stale-painted
-     sliver of a letter surviving a fast scroll-direction reversal). */
+     sliver of a letter surviving a fast scroll-direction reversal). It also
+     clips the ENTER dive: once .rt-enter scales into the T far enough to flood
+     the frame cream, everything past this box's edges is thrown away. */
   contain: paint;
-}
-
-.rethink-inner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: currentColor;
-  /* Opens as a portal centered on the T — .rt-enter's transform-origin fix
-     keeps that glyph pinned exactly at 50%/50% of this box throughout the
-     zoom, so the flood can expand from the same fixed point with no extra
-     bookkeeping. 75vmax comfortably clears every corner at any aspect ratio
-     (worst case, a square viewport, needs ~70.7vmax). */
-  clip-path: circle(calc(var(--rethink-progress-2) * 75vmax) at 50% 50%);
-  will-change: clip-path;
 }
 
 .rethink-zoom {
@@ -710,30 +699,31 @@ main {
   left: 50%;
   margin: 0;
   font-family: var(--font-ext);
-  /* Rendered at its full end-size (base size × the old scale multiplier)
-     so the glyphs are rasterized crisp from the start; the scroll-driven
-     transform below only ever scales *down* toward that size (0 → 1), never
-     up past it — and rt-enter now lives outside .rethink-zoom entirely, so
-     it never inherits that element's own 1→4x scale on top of its own. Two
-     compounded scales were pushing the effective size well past this
-     "already at max" size, which is what was actually blurring the glyphs. */
+  /* Rendered at its readable end-size (base size × multiplier) so the wordmark
+     is crisp at rest. The scroll-driven transform grows it 0 → 1 (emerge) and
+     then dives it far past 1, straight into the T. Mid-dive the raster softens,
+     but by then it is a solid cream field flooding the frame, so it never reads
+     as blur. rt-enter lives outside .rethink-zoom, so it never inherits that
+     element's own 1→4x scale on top of its own. */
   font-size: calc(3.07692vh * 18.2);
   font-weight: 700;
   line-height: 0.9;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0;
-  opacity: calc(var(--rethink-progress-1) * 2);
+  opacity: var(--rt-enter-opacity, 0);
   /* Origin is the T's measured center (Rethink.tsx sets these two custom
      properties from real layout, not a guess) — translating an element by
      the negative of its own transform-origin point is the standard "anchor
      this exact point, scale everything else around it" trick, generalized
-     here from the usual 50%/50% center-lock to an arbitrary glyph. */
+     here from the usual 50%/50% center-lock to an arbitrary glyph. The dive
+     scales *around* that same point, so the cream T floods the frame from the
+     T outward and hands straight off to the light section — no iris circle. */
   transform: translate(
       calc(-1 * var(--rethink-origin-x, 50%)),
       calc(-1 * var(--rethink-origin-y, 45%))
     )
-    scale(var(--rethink-progress-1));
+    scale(var(--rt-enter-scale, 0));
   transform-origin: var(--rethink-origin-x, 50%) var(--rethink-origin-y, 45%);
   will-change: transform, opacity;
 }

@@ -3,15 +3,22 @@
 import { useRef } from "react";
 import { ScrollTrigger, gsap, useGSAP } from "@/lib/animation";
 
-const ZOOM_PROGRESS_END = 0.6;
-const WIPE_PROGRESS_START = 0.545;
+const ZOOM_END = 0.4; // lead-in "web experiences" composition zoom completes
+const APPEAR_END = 0.26; // ENTER NEXOR has emerged to its readable size
+const DWELL_END = 0.33; // ...holds a short readable beat, then the dive begins
+                        // (overlapping the tail of the lead-in fade, so the
+                        // wordmark never sits dead-still for long)
+const DIVE_END = 0.95; // the dive into the T has fully flooded the frame cream
+const FLOOD_SCALE = 24; // scale at which the cream T covers the whole viewport
 
 /**
  * Faithful Lenis solution takeover: a long scroll section with one sticky
- * viewport. The complete type composition zooms as a unit, the centered
- * ENTER NEXOR layer grows through it, and a light horizontal wipe closes the
- * scene. Scroll progress stays raw and deterministic; Lenis supplies only the
- * input smoothing.
+ * viewport. The lead-in composition zooms up and fades, then ENTER NEXOR
+ * emerges, dwells a beat, and dives straight INTO the T — because that glyph
+ * is a solid cream shape, scaling into its centre floods the frame cream and
+ * hands off to the light section, so the T itself is the transition (no iris
+ * circle). Scroll progress stays raw and deterministic; Lenis supplies only
+ * the input smoothing.
  */
 export default function Rethink() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -53,13 +60,33 @@ export default function Rethink() {
         const start = sectionTop + viewportHeight * 0.5;
         const end = sectionTop + bounds.height - viewportHeight;
         const progress = clamp((scroll - start) / Math.max(1, end - start));
-        const zoomProgress = clamp(progress / ZOOM_PROGRESS_END);
-        const wipeProgress = clamp(
-          (progress - WIPE_PROGRESS_START) / (1 - WIPE_PROGRESS_START),
-        );
 
+        /* Lead-in: "So we built / web experiences" + "As it should be" zoom up
+           as a unit and fade, exactly as before. */
+        const zoomProgress = clamp(progress / ZOOM_END);
         section.style.setProperty("--rethink-progress-1", String(zoomProgress));
-        section.style.setProperty("--rethink-progress-2", String(wipeProgress));
+
+        /* ENTER NEXOR emerges (ease-out settle to its readable size), dwells a
+           beat, then dives INTO the T. The dive is exponential so it accelerates
+           like a camera flying into the glyph; at FLOOD_SCALE the solid cream T
+           covers the whole viewport — that flood is the entire transition. */
+        let enterScale: number;
+        if (progress <= APPEAR_END) {
+          const t = progress / APPEAR_END;
+          enterScale = 1 - Math.pow(1 - t, 3);
+        } else if (progress <= DWELL_END) {
+          enterScale = 1;
+        } else if (progress <= DIVE_END) {
+          const t = (progress - DWELL_END) / (DIVE_END - DWELL_END);
+          enterScale = Math.pow(FLOOD_SCALE, t);
+        } else {
+          enterScale = FLOOD_SCALE;
+        }
+        section.style.setProperty("--rt-enter-scale", String(enterScale));
+        section.style.setProperty(
+          "--rt-enter-opacity",
+          String(clamp((progress / APPEAR_END) * 2.5)),
+        );
 
         /* rt-first/rt-second exit through rethink-inner's clipped edges as
            this translates/scales, and used to hit that overflow:hidden clip
@@ -78,7 +105,11 @@ export default function Rethink() {
           section.style.setProperty("--rethink-text-fade", String(textFade));
         }
 
-        if (progress === 1) {
+        /* Once the cream T has fully flooded the frame, paint the section (and
+           page) cream so the final stretch hands seamlessly to the light
+           section below — the flip is invisible because the frame is already
+           solid cream at that point. */
+        if (progress >= DIVE_END) {
           section.style.backgroundColor = "currentColor";
           document.body.style.setProperty("--page-bg", "#f2ede6");
         } else {
@@ -106,7 +137,8 @@ export default function Rethink() {
       return () => {
         trigger.kill();
         section.style.removeProperty("--rethink-progress-1");
-        section.style.removeProperty("--rethink-progress-2");
+        section.style.removeProperty("--rt-enter-scale");
+        section.style.removeProperty("--rt-enter-opacity");
         section.style.removeProperty("--rethink-text-fade");
         section.style.removeProperty("background-color");
         document.body.style.removeProperty("--page-bg");
