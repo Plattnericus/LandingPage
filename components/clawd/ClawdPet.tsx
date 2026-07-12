@@ -229,10 +229,20 @@ export default function ClawdPet() {
       if (!el || !state.bubble) return;
       const letters = el.querySelectorAll(".clawd-bubble-letter");
 
+      /* prefer above the sprite; flip below only when the viewport doesn't
+         leave room — Clawd's default spawn sits close to the top edge, so
+         that's the common case there, while a dragged-down Clawd gets the
+         bubble above like normal. */
+      const spriteTop = rootRef.current?.getBoundingClientRect().top ?? Infinity;
+      const below = spriteTop < el.offsetHeight + 16;
+      el.classList.toggle("clawd-bubble--below", below);
+      const enterY = below ? -10 : 10;
+      const exitY = below ? 8 : -8;
+
       const tl = gsap.timeline();
       tl.fromTo(
         el,
-        { y: -10, autoAlpha: 0, scale: 0.9 },
+        { y: enterY, autoAlpha: 0, scale: 0.9 },
         { y: 0, autoAlpha: 1, scale: 1, duration: 0.3, ease: "back.out(2)" },
       ).fromTo(
         letters,
@@ -243,7 +253,7 @@ export default function ClawdPet() {
 
       const lead = Math.max(200, state.until - performance.now() - 320);
       gsap.to(el, {
-        y: 8,
+        y: exitY,
         autoAlpha: 0,
         duration: 0.3,
         ease: "power2.in",
@@ -283,16 +293,7 @@ export default function ClawdPet() {
       root.style.left = `${x}px`;
       root.style.right = "auto";
       root.style.bottom = "auto";
-      /* Stay top-anchored even while dragged: the sprite is always the
-         grid's *first* row (the bubble, when present, mounts as a row below
-         it), so anchoring the edge next to the sprite — top — is what keeps
-         it visually fixed while a bubble grows the column downward. */
       root.style.top = `${y}px`;
-      /* justify-items:end pins items to a fixed *right* edge in the default
-         corner layout — dragging moves the fixed edge to left instead, so
-         alignment has to flip to start, or the sprite would visibly slide
-         sideways whenever the (wider) bubble mounts. */
-      root.style.justifyItems = "start";
     };
     const onUp = () => {
       sprite.releasePointerCapture(event.pointerId);
@@ -325,9 +326,8 @@ export default function ClawdPet() {
 
   return (
     <div className="clawd-pet" aria-hidden={false} ref={rootRef}>
-      {/* sprite is always the grid's first row — it spawns top-right and
-          stays pinned there; the bubble mounts as a second row below it, so
-          it can never push the sprite itself out of position */}
+      {/* bubble is absolutely positioned off the sprite (see .clawd-bubble),
+          so it can never push the sprite itself out of position */}
       <button
         type="button"
         className="clawd-sprite"

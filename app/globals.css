@@ -650,14 +650,15 @@ main {
 .rethink-inner::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 50%;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: currentColor;
-  transform: translateX(-50%) scaleX(var(--rethink-progress-2));
-  transform-origin: center;
-  will-change: transform;
+  /* Opens as a portal centered on the T — .rt-enter's transform-origin fix
+     keeps that glyph pinned exactly at 50%/50% of this box throughout the
+     zoom, so the flood can expand from the same fixed point with no extra
+     bookkeeping. 75vmax comfortably clears every corner at any aspect ratio
+     (worst case, a square viewport, needs ~70.7vmax). */
+  clip-path: circle(calc(var(--rethink-progress-2) * 75vmax) at 50% 50%);
+  will-change: clip-path;
 }
 
 .rethink-zoom {
@@ -712,7 +713,10 @@ main {
   /* Rendered at its full end-size (base size × the old scale multiplier)
      so the glyphs are rasterized crisp from the start; the scroll-driven
      transform below only ever scales *down* toward that size (0 → 1), never
-     up past it, so the zoom-in never looks blurry at any point. */
+     up past it — and rt-enter now lives outside .rethink-zoom entirely, so
+     it never inherits that element's own 1→4x scale on top of its own. Two
+     compounded scales were pushing the effective size well past this
+     "already at max" size, which is what was actually blurring the glyphs. */
   font-size: calc(3.07692vh * 18.2);
   font-weight: 700;
   line-height: 0.9;
@@ -720,8 +724,17 @@ main {
   text-transform: uppercase;
   letter-spacing: 0;
   opacity: calc(var(--rethink-progress-1) * 2);
-  transform: translate(-54.2%, -50%) scale(var(--rethink-progress-1));
-  transform-origin: 50% calc(50% - var(--rethink-progress-1) * 27%);
+  /* Origin is the T's measured center (Rethink.tsx sets these two custom
+     properties from real layout, not a guess) — translating an element by
+     the negative of its own transform-origin point is the standard "anchor
+     this exact point, scale everything else around it" trick, generalized
+     here from the usual 50%/50% center-lock to an arbitrary glyph. */
+  transform: translate(
+      calc(-1 * var(--rethink-origin-x, 50%)),
+      calc(-1 * var(--rethink-origin-y, 45%))
+    )
+    scale(var(--rethink-progress-1));
+  transform-origin: var(--rethink-origin-x, 50%) var(--rethink-origin-y, 45%);
   will-change: transform, opacity;
 }
 
@@ -745,8 +758,6 @@ main {
 
   .rt-enter {
     font-size: calc(6.37255vh * 8.5);
-    transform: translate(-50%, -50%) scale(var(--rethink-progress-1));
-    transform-origin: 50% calc(50% - var(--rethink-progress-1) * 25%);
   }
 }
 
@@ -795,86 +806,140 @@ main {
 }
 
 /* ------------------------------------------------------------------ */
-/* Heat — pinned stacked cards + sticky headline right                 */
+/* Heat — exact Lenis-style 16-screen sticky card fan                  */
 /* ------------------------------------------------------------------ */
 
 .heat {
+  --heat-safe: calc(40 / 1440 * 100vw);
+  --heat-gap: calc(24 / 1440 * 100vw);
+  --heat-columns: 12;
+  --heat-card-size: calc(
+    4 *
+      (
+        (100vw - 2 * var(--heat-safe) - 11 * var(--heat-gap)) /
+          var(--heat-columns)
+      ) + 3 * var(--heat-gap)
+  );
+  --heat-position-size: calc(440 / 1440 * 100vw);
   position: relative;
+  height: 1600vh;
+  height: 1600svh;
   color: var(--dark);
 }
 
 .heat-pin {
-  position: relative;
-  padding: 10vh clamp(1.4rem, 4vw, 3.4rem) 12vh;
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  padding: var(--heat-safe);
+  overflow: hidden;
+  isolation: isolate;
 }
 
-/* soft terracotta floor glow, like the pink haze on lenis.dev */
+/* The reference canvas carries a low pink haze. This is the same layer
+   mapped to Nexor's terracotta palette and kept behind the hand/cards. */
 .heat-pin::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 46vh;
-  background: linear-gradient(to top, rgba(222, 136, 109, 0.32), transparent);
+  z-index: -1;
+  left: 50%;
+  bottom: -48vw;
+  width: 190vw;
+  height: 100vw;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(222, 136, 109, 0.34),
+    rgba(222, 136, 109, 0) 70%
+  );
+  opacity: 0.72;
   pointer-events: none;
-  z-index: 1;
+  transform: translateX(-50%);
 }
 
 .heat-title {
-  position: relative;
-  text-align: left;
-  font-family: var(--font-head);
-  font-weight: 400;
+  position: absolute;
+  top: var(--heat-safe);
+  right: var(--heat-safe);
+  text-align: right;
+  font-family: var(--font-ext);
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: clamp(2.4rem, 4.8vw, 4.6rem);
-  line-height: 0.95;
-  margin-bottom: clamp(2rem, 6vh, 4rem);
-  z-index: 3;
+  font-size: calc(52 / 1440 * 100vw);
+  line-height: 0.9;
+  letter-spacing: 0;
 }
 
-.heat-title .ht-2 {
+.heat-title h2 {
+  font: inherit;
+}
+
+.heat-title-line {
+  display: block;
+  overflow: hidden;
+}
+
+.heat-title-line-inner {
+  display: inline-block;
+  will-change: transform;
+}
+
+.heat-title-line.ht-2 {
   color: var(--grey);
 }
 
-.heat-cards {
+.heat-card-stage {
   position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: clamp(1rem, 2vw, 1.6rem);
+  width: 100%;
+  height: 0;
 }
 
 .heat-card {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 0.98;
-  background: rgba(242, 237, 230, 0.55);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
-  border: 1px solid rgba(11, 9, 8, 0.18);
-  padding: clamp(1rem, 1.8vw, 1.8rem);
+  position: absolute;
+  top: calc(
+    (
+        100svh - var(--heat-position-size) - 2 * var(--heat-safe)
+      ) /
+      (var(--heat-card-count) - 1) * var(--heat-card-index)
+  );
+  left: calc(
+    (
+        100vw - var(--heat-position-size) - 2 * var(--heat-safe)
+      ) /
+      (var(--heat-card-count) - 1) * var(--heat-card-index)
+  );
+  width: var(--heat-card-size);
+  aspect-ratio: 1;
+  padding: calc(24 / 1440 * 100vw);
+  color: var(--dark);
+  background: rgba(242, 237, 230, 0.8);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--dark);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  will-change: transform, opacity;
+  opacity: 0;
   visibility: hidden;
+  will-change: transform, opacity;
 }
 
 .hc-num {
   font-family: var(--font-head);
   font-weight: 400;
-  color: var(--accent-strong);
-  font-size: clamp(3rem, 5.6vw, 5.4rem);
-  line-height: 0.95;
+  color: var(--accent);
+  font-size: calc(96 / 1440 * 100vw);
+  line-height: 0.9;
 }
 
 .hc-label {
   font-family: var(--font-ext);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: clamp(1rem, 1.5vw, 1.5rem);
-  line-height: 1.12;
+  font-size: calc(28 / 1440 * 100vw);
+  line-height: 1;
+  letter-spacing: 0;
   color: var(--dark);
 }
 
@@ -1053,9 +1118,6 @@ main {
   right: clamp(0.8rem, 2vw, 1.8rem);
   top: clamp(1.2rem, 3vh, 2.4rem);
   z-index: 200;
-  display: grid;
-  justify-items: end;
-  gap: 0.4rem;
   pointer-events: none;
 }
 
@@ -1092,6 +1154,10 @@ main {
 }
 
 .clawd-bubble {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 0.6rem;
   font-family: var(--font-ext);
   font-weight: 700;
   font-size: 0.68rem;
@@ -1104,6 +1170,15 @@ main {
   padding: 0.35rem 0.8rem;
   white-space: nowrap;
   visibility: hidden;
+}
+
+/* flipped from JS only when there isn't enough room above the sprite —
+   Clawd's default spawn sits close to the top edge of the viewport */
+.clawd-bubble--below {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 0.6rem;
 }
 
 .clawd-bubble-letter {
@@ -1205,16 +1280,46 @@ main {
     padding-right: 0;
   }
 
-  .heat-pin {
-    padding: 8vh 1.4rem 10vh;
+  .heat {
+    --heat-safe: calc(16 / 375 * 100vw);
+    --heat-card-size: calc(343 / 375 * 100vw);
+    --heat-position-size: calc(440 / 375 * 100vw);
   }
 
-  .heat-cards {
-    grid-template-columns: 1fr;
+  .heat-title {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    padding-bottom: var(--heat-safe);
+    font-size: calc(20 / 375 * 100vw);
+    line-height: 0.9;
   }
 
   .heat-card {
-    max-width: 420px;
+    top: calc(
+      (
+          100svh - var(--heat-position-size) - var(--heat-safe)
+        ) /
+        (var(--heat-card-count) - 1) * var(--heat-card-index)
+    );
+    left: 0;
+    padding: calc(24 / 375 * 100vw);
+  }
+
+  .hc-num {
+    font-size: calc(56 / 375 * 100vw);
+    line-height: 1;
+  }
+
+  .hc-label {
+    font-size: calc(20 / 375 * 100vw);
+  }
+
+  .heat-pin::after {
+    bottom: -80vw;
+    width: 230vw;
+    height: 170vw;
   }
 
   .hero-bottom {
@@ -1643,8 +1748,23 @@ main {
     display: none;
   }
 
+  .heat {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  .heat-pin {
+    position: relative;
+  }
+
   .heat-card {
+    opacity: 1;
     visibility: visible;
+    transform: none;
+  }
+
+  .heat-title-line-inner {
+    transform: none;
   }
 
   .progress-line {

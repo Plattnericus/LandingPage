@@ -28,6 +28,10 @@ if (typeof window !== "undefined") {
     CustomEase.create("apple", "0.32, 0.72, 0, 1");
     CustomEase.create("appleOut", "0.16, 1, 0.3, 1");
   }
+
+  if (!CustomEase.get("lenisExpo")) {
+    CustomEase.create("lenisExpo", "0.19, 1, 0.22, 1");
+  }
 }
 
 export { gsap, useGSAP, ScrollTrigger, SplitText };
@@ -38,6 +42,7 @@ export const EASE = {
   inOut: "power2.inOut",
   apple: "apple",
   appleOut: "appleOut",
+  lenisExpo: "lenisExpo",
 } as const;
 
 /** Pin distances (px of scroll); longer pins buy real dwell time per beat. */

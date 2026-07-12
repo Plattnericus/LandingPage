@@ -3,7 +3,7 @@
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { PALETTE } from "@/lib/palette";
 
@@ -33,6 +33,7 @@ useGLTF.preload(ARM_POINT_URL);
 
 function ScrollSync() {
   const rethink = useRef<HTMLElement | null>(null);
+  const heat = useRef<HTMLElement | null>(null);
   const lastScrollY = useRef<number | null>(null);
 
   useFrame(() => {
@@ -50,8 +51,14 @@ function ScrollSync() {
       rethink.current = document.querySelector<HTMLElement>(".rethink");
       if (!rethink.current) return;
     }
+    if (!heat.current) {
+      heat.current = document.querySelector<HTMLElement>(".heat");
+      if (!heat.current) return;
+    }
     const bounds = rethink.current.getBoundingClientRect();
+    const heatBounds = heat.current.getBoundingClientRect();
     const top = bounds.top + scrollY;
+    const heatTop = heatBounds.top + scrollY;
     const viewportHeight = window.innerHeight;
     const docEnd = document.documentElement.scrollHeight - window.innerHeight;
     const solutionStart = top + viewportHeight * 0.5;
@@ -65,14 +72,33 @@ function ScrollSync() {
     /* Match the exact late horizontal wipe used by the DOM takeover. */
     lightProgress.value = THREE.MathUtils.clamp((solutionProgress - 0.545) / 0.455, 0, 1);
 
-    /* The hand begins halfway through the same normalized scene and then
-       continues through the remaining light-page content. */
+    /* Lenis uses one continuous light-scene hand path. The exact Heat pose
+       lands at a fixed point in our rig, then the model completes almost two
+       Y-axis turns between the Heat start and the page end. Splitting the
+       normalization here keeps that pose stable even when other sections
+       change height. */
     const handStart = solutionStart + (solutionEnd - solutionStart) * 0.45;
-    handProgress.value = THREE.MathUtils.clamp(
-      (scrollY - handStart) / Math.max(1, docEnd - handStart),
-      0,
-      1,
-    );
+    const heatKeyframe = 0.42;
+
+    if (scrollY < heatTop) {
+      const leadIn = THREE.MathUtils.clamp(
+        (scrollY - handStart) / Math.max(1, heatTop - handStart),
+        0,
+        1,
+      );
+      handProgress.value = leadIn * heatKeyframe;
+    } else {
+      const heatToEnd = THREE.MathUtils.clamp(
+        (scrollY - heatTop) / Math.max(1, docEnd - heatTop),
+        0,
+        1,
+      );
+      handProgress.value = THREE.MathUtils.lerp(
+        heatKeyframe,
+        1,
+        heatToEnd,
+      );
+    }
   });
 
   return null;
@@ -291,16 +317,72 @@ function Starfield() {
   );
 }
 
+/* Lenis keeps a much smaller field of warm particles alive after the light
+   takeover. It must be a separate draw call: making unused dark-scene stars
+   black would turn all 1,600 of them into soot on the cream background. */
+const LIGHT_PARTICLE_COUNT = 100;
+
+function LightParticles() {
+  const group = useRef<THREE.Group>(null);
+  const material = useRef<THREE.PointsMaterial>(null);
+  const { width, height } = useThree((state) => state.viewport);
+  const positions = useMemo(() => {
+    const values = new Float32Array(LIGHT_PARTICLE_COUNT * 3);
+    const seeded = (value: number) => {
+      const raw = Math.sin(value * 12.9898) * 43758.5453;
+      return raw - Math.floor(raw);
+    };
+
+    for (let index = 0; index < LIGHT_PARTICLE_COUNT; index++) {
+      const offset = index * 3;
+      values[offset] = (seeded(offset + 1) - 0.5) * 1.12;
+      values[offset + 1] = (seeded(offset + 2) - 0.5) * 1.12;
+      values[offset + 2] = -0.5 - seeded(offset + 3) * 1.5;
+    }
+
+    return values;
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (material.current) {
+      material.current.opacity = lightProgress.value * 0.4;
+    }
+    if (group.current) {
+      group.current.rotation.z = -clock.elapsedTime * 0.006;
+      group.current.position.y = Math.sin(clock.elapsedTime * 0.16) * 0.025;
+    }
+  });
+
+  return (
+    <group ref={group} scale={[width, height, 1]}>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          ref={material}
+          color="#de886d"
+          size={0.026}
+          sizeAttenuation
+          transparent
+          opacity={0}
+          depthWrite={false}
+        />
+      </points>
+    </group>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Arm models — C4D exports ship without materials and at ~70 units,   */
 /* so every mesh gets the shared chrome and the rig is Box3-normalized */
 /* ------------------------------------------------------------------ */
 
 const chromeMaterial = new THREE.MeshStandardMaterial({
-  color: "#e8e6e3",
-  metalness: 0.95,
-  roughness: 0.25,
-  envMapIntensity: 1.3,
+  color: "#efefef",
+  metalness: 0.6,
+  roughness: 0.4,
+  side: THREE.DoubleSide,
 });
 
 /** Center + scale factors so an object's longest axis spans `target` world units.
@@ -360,17 +442,18 @@ function useChromeArm(url: string, targetHeight: number) {
 /* same way lenis.dev's single rigged hand never disappears.           */
 /* ------------------------------------------------------------------ */
 
-/** Piecewise keyframes: [progress, x, y, rotX, rotY, scale]. Interpolated
+/** Piecewise keyframes: [progress, x, y, rotX, rotY, rotZ, scale]. Interpolated
     with smoothstep easing between the two bracketing stops. */
-const HAND_KEYFRAMES: Array<[number, number, number, number, number, number]> = [
-  [0.0, 1.5, -8.5, 0.5, -0.5, 0.9],
-  [0.16, 1.7, -0.6, 0.42, -0.14, 1.0], // entrance complete, OPEN pose
-  [0.2, 1.2, -3.6, 0.4, 0.0, 0.95], // dips just offscreen — pose swaps here
-  [0.24, 0.7, -0.75, 0.16, 0.05, 1.0], // rises back in, already POINT pose
-  [0.46, 0.0, -0.5, 0.1, 0.0, 1.05], // drifts to center through the solution copy
-  [0.62, 1.4, -1.15, 0.08, -0.1, 1.18], // settles center-right, holds through heat
-  [0.85, 2.1, -1.55, 0.06, -0.22, 1.26], // leans in from the right for the footer
-  [1.0, 2.6, -1.9, 0.05, -0.28, 1.3],
+const HAND_KEYFRAMES: Array<
+  [number, number, number, number, number, number, number]
+> = [
+  [0.0, 1.5, -8.5, 0.5, -0.5, 0.05, 0.9],
+  [0.17, 1.7, -0.65, 0.42, -0.14, 0.05, 1.0], // OPEN pose
+  [0.22, 1.2, -3.6, 0.4, 0.0, 0.05, 0.95], // offscreen pose swap
+  [0.27, 0.7, -0.8, 0.16, 0.05, 0.02, 1.04], // POINT pose
+  [0.34, 0.65, -1.55, 0.08, 3.49, -0.28, 1.34], // Lenis light-start pose
+  [0.42, 0.0, -1.0, 0.0, -0.244, -0.279, 1.2], // exact Heat start
+  [1.0, 0.9, -0.62, 0.0, -12.217, -0.279, 0.9], // page end: -700deg Y
 ];
 
 /** Progress value at which the visible pose switches from OPEN to POINT —
@@ -382,14 +465,15 @@ function sampleHand(p: number) {
   const frames = HAND_KEYFRAMES;
   let i = 0;
   while (i < frames.length - 2 && p > frames[i + 1][0]) i++;
-  const [p0, x0, y0, rx0, ry0, s0] = frames[i];
-  const [p1, x1, y1, rx1, ry1, s1] = frames[i + 1];
+  const [p0, x0, y0, rx0, ry0, rz0, s0] = frames[i];
+  const [p1, x1, y1, rx1, ry1, rz1, s1] = frames[i + 1];
   const t = p1 > p0 ? THREE.MathUtils.smoothstep((p - p0) / (p1 - p0), 0, 1) : 0;
   return {
     x: THREE.MathUtils.lerp(x0, x1, t),
     y: THREE.MathUtils.lerp(y0, y1, t),
     rotX: THREE.MathUtils.lerp(rx0, rx1, t),
     rotY: THREE.MathUtils.lerp(ry0, ry1, t),
+    rotZ: THREE.MathUtils.lerp(rz0, rz1, t),
     scale: THREE.MathUtils.lerp(s0, s1, t),
   };
 }
@@ -405,11 +489,11 @@ function HandRig() {
     const g = group.current;
     if (!g) return;
     const p = handProgress.value;
-    const { x, y, rotX, rotY, scale } = sampleHand(p);
+    const { x, y, rotX, rotY, rotZ, scale } = sampleHand(p);
 
-    const idle = Math.sin(clock.elapsedTime * 0.8) * 0.07;
-    g.position.set(x, y + idle, 0);
-    g.rotation.set(rotX, rotY, 0.05);
+    const idle = Math.sin(clock.elapsedTime * 0.8);
+    g.position.set(x + idle * 0.025, y + idle * 0.055, 0);
+    g.rotation.set(rotX + idle * 0.012, rotY, rotZ - idle * 0.01);
     g.scale.setScalar(scale);
     g.visible = p > 0.001;
 
@@ -442,26 +526,17 @@ function HandRig() {
 /* ------------------------------------------------------------------ */
 
 function Scene() {
-  const width = useThree((state) => state.size.width);
-  const withHand = width >= 900 && !prefersStill;
+  const withHand = !prefersStill;
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[4, 6, 4]} intensity={1.1} />
+      <ambientLight color="#a29a92" intensity={1} />
+      <directionalLight color="#efefef" position={[-6, 5, 2]} intensity={1} />
+      <directionalLight color="#efefef" position={[8, -3, 4]} intensity={1} />
       <ScrollSync />
       <Starfield />
+      <LightParticles />
       {withHand && <HandRig />}
-      {withHand && (
-        <Environment resolution={256} frames={1}>
-          {/* soft dome plus fills — keeps the chrome bright instead of stripey */}
-          <Lightformer intensity={1.6} position={[0, 8, 0]} rotation-x={Math.PI / 2} scale={[22, 22, 1]} />
-          <Lightformer intensity={1.1} position={[0, 2, 6]} scale={[14, 8, 1]} />
-          <Lightformer intensity={0.9} position={[-6, 1, 1]} rotation-y={Math.PI / 2} scale={[12, 8, 1]} />
-          <Lightformer intensity={0.9} position={[6, 0, 1]} rotation-y={-Math.PI / 2} scale={[12, 8, 1]} />
-          <Lightformer intensity={0.5} color={PALETTE.accentSoft} position={[0, -5, 3]} scale={[10, 4, 1]} />
-        </Environment>
-      )}
     </>
   );
 }
