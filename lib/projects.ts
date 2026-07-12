@@ -83,8 +83,8 @@ export const projects: Project[] = [
     description:
       "A wall-mounted smart display running on a Raspberry Pi: time, weather and daily information rendered as a calm always-on interface.",
     tech: ["JavaScript", "Node.js", "Raspberry Pi", "Selfhosting"],
-    liveUrl: null,
-    githubUrl: "https://github.com/Plattnericus",
+    liveUrl: "https://magicmirror.plattnericus.dev",
+    githubUrl: "https://github.com/Plattnericus/Magic-Mirror",
     preview: {
       kind: "video",
       src: "/projects/magicmirror.mp4",
@@ -99,8 +99,8 @@ export const projects: Project[] = [
     description:
       "The classic logic game rebuilt from scratch: clean grid state, flood reveals, flagging and a focused minimal interface.",
     tech: ["Game Logic", "Grid Algorithms", "UI"],
-    liveUrl: null,
-    githubUrl: "https://github.com/Plattnericus",
+    liveUrl: "https://minesweeper.plattnericus.dev",
+    githubUrl: "https://github.com/Plattnericus/Minesweeper",
     preview: {
       kind: "video",
       src: "/projects/minesweeper.mp4",
