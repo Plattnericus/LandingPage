@@ -9,6 +9,7 @@ export const siteConfig = {
   role: "Fullstack Developer · DevOps Enthusiast · Cybersecurity in Progress",
   claim: "Building reliable software, infrastructure and security-focused systems.",
   github: "https://github.com/Plattnericus",
+  modrinth: "https://modrinth.com/user/Plattnericus",
   email: "felix.plattner89@icloud.com",
   locale: "en_US",
   keywords: [

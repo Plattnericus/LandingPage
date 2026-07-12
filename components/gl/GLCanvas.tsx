@@ -12,6 +12,16 @@ type Progress = { value: number };
 /* module-level singletons: written once per frame, read by every child */
 const lightProgress: Progress = { value: 0 };
 const handProgress: Progress = { value: 0 };
+/** 1 while the rethink zoom-through-the-T is still on screen. The hand keeps
+    its normal pose schedule underneath, but is rendered invisible for the whole
+    dive so it never intrudes on that transition; the gate only lifts once the
+    cream T has fully flooded the frame, so the hand is revealed behind the
+    flood and simply appears — already pointing up — as the Solution section
+    scrolls in. */
+const handHidden: Progress = { value: 0 };
+/** Progress at which the flood is solid cream (matches Rethink's DIVE_END); the
+    hand's visibility gate lifts here, safely behind that cream. */
+const HAND_REVEAL_AT = 0.96;
 /** Signed, lightly smoothed px/frame scroll speed — positive while scrolling
     down. Drives the starfield's warp-tunnel travel and streak length. */
 const warpVelocity: Progress = { value: 0 };
@@ -71,6 +81,10 @@ function ScrollSync() {
 
     /* Match the exact late horizontal wipe used by the DOM takeover. */
     lightProgress.value = THREE.MathUtils.clamp((solutionProgress - 0.545) / 0.455, 0, 1);
+
+    /* Hide the hand for the entire rethink dive (solutionProgress tracks that
+       section), lifting only once the cream flood is solid — see handHidden. */
+    handHidden.value = solutionProgress < HAND_REVEAL_AT ? 1 : 0;
 
     /* Lenis uses one continuous light-scene hand path. The exact Heat pose
        lands at a fixed point in our rig, then the model completes almost two
@@ -453,7 +467,7 @@ const HAND_KEYFRAMES: Array<
   [0.27, 0.7, -0.8, 0.16, 0.05, 0.02, 1.04], // POINT pose
   [0.34, 0.65, -1.55, 0.08, 3.49, -0.28, 1.34], // Lenis light-start pose
   [0.42, 0.0, -1.0, 0.0, -0.244, -0.279, 1.2], // exact Heat start
-  [1.0, 0.9, -0.62, 0.0, -12.217, -0.279, 0.9], // page end: -700deg Y
+  [1.0, 1.8, -0.78, 0.0, -12.217, -0.279, 0.78], // page end: -700deg Y, nudged right, less arm
 ];
 
 /** Progress value at which the visible pose switches from OPEN to POINT —
@@ -495,7 +509,7 @@ function HandRig() {
     g.position.set(x + idle * 0.025, y + idle * 0.055, 0);
     g.rotation.set(rotX + idle * 0.012, rotY, rotZ - idle * 0.01);
     g.scale.setScalar(scale);
-    g.visible = p > 0.001;
+    g.visible = p > 0.001 && handHidden.value < 0.5;
 
     /* pose handover happens while the rig is at its lowest (offscreen) point */
     if (openRef.current) openRef.current.visible = p < POSE_SWAP_AT;

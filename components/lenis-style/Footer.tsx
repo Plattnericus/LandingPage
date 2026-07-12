@@ -51,11 +51,7 @@ export default function Footer() {
           <a href={siteConfig.github} target="_blank" rel="noreferrer">
             GitHub
           </a>
-          <a
-            href="https://modrinth.com/mod/projectile.preview"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a href={siteConfig.modrinth} target="_blank" rel="noreferrer">
             Modrinth
           </a>
           <a href={`mailto:${siteConfig.email}`}>Mail</a>

@@ -632,7 +632,7 @@ main {
   --rt-enter-opacity: 0;
   --rethink-text-fade: 1;
   position: relative;
-  height: 500vh;
+  height: 360vh;
   color: var(--light);
 }
 
@@ -730,7 +730,7 @@ main {
 
 @media (min-width: 800px) {
   .rethink {
-    height: 1000vh;
+    height: 620vh;
   }
 
   .rethink-inner {
