@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Heart } from "lucide-react";
-import { EASE, gsap, useGSAP } from "@/lib/animation";
+import { EASE, NO_MOTION_PREF, gsap, useGSAP } from "@/lib/animation";
 import { siteConfig } from "@/lib/site";
 
 export default function Footer() {
@@ -10,18 +10,26 @@ export default function Footer() {
 
   useGSAP(
     () => {
-      gsap.fromTo(
-        ".fx-type, .fx-cta-row",
-        { y: 60, autoAlpha: 0 },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 1,
-          stagger: 0.14,
-          ease: EASE.appleOut,
-          scrollTrigger: { trigger: sectionRef.current, start: "top 62%" },
-        },
-      );
+      const section = sectionRef.current;
+      if (!section) return;
+      const mm = gsap.matchMedia();
+
+      mm.add(NO_MOTION_PREF, () => {
+        gsap.fromTo(
+          ".fx-type, .fx-cta-row",
+          { y: 60, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 1,
+            stagger: 0.14,
+            ease: EASE.appleOut,
+            scrollTrigger: { trigger: section, start: "top 62%" },
+          },
+        );
+      });
+
+      return () => mm.revert();
     },
     { scope: sectionRef },
   );
@@ -33,9 +41,8 @@ export default function Footer() {
           Nexor is <span className="fx-accent">open source</span>
         </p>
         <p className="fx-type fx-l2">
-          open to projects
-          <br />
-          and ideas
+          <span className="fx-l2-line">open to projects</span>
+          <span className="fx-l2-line fx-l2-line-bottom">and ideas</span>
         </p>
       </div>
 

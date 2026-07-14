@@ -24,10 +24,10 @@ export default function IntroLoader() {
   useEffect(() => {
     const skipIntro =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      window.matchMedia("(max-width: 799.98px)").matches;
+      window.matchMedia("(max-width: 899px)").matches;
 
     if (skipIntro) {
-      /* lenis.dev also skips the intro below 800px */
+      /* Mobile uses the direct hero reveal and skips the heavy intro. */
       const release = window.setTimeout(() => {
         completeIntro();
         setGone(true);

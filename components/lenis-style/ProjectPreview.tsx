@@ -160,7 +160,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
               alt=""
               fill
               quality={78}
-              sizes="(max-width: 899px) 74.667vw, 640px"
+              sizes="(max-width: 899px) 84vw, 640px"
               aria-hidden="true"
               style={{ objectPosition }}
             />
@@ -173,7 +173,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
           alt=""
           fill
           quality={78}
-          sizes="(max-width: 899px) 74.667vw, 640px"
+          sizes="(max-width: 899px) 84vw, 640px"
           aria-hidden="true"
           style={{ objectPosition }}
         />
@@ -186,7 +186,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
               alt=""
               fill
               quality={78}
-              sizes="(max-width: 899px) 74.667vw, 640px"
+              sizes="(max-width: 899px) 84vw, 640px"
               aria-hidden="true"
               style={{ objectPosition }}
             />

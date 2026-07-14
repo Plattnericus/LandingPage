@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { EASE, SplitText, gsap, useGSAP } from "@/lib/animation";
+import { EASE, NO_MOTION_PREF, SplitText, gsap, useGSAP } from "@/lib/animation";
 import { siteConfig } from "@/lib/site";
 
 export default function Solution() {
@@ -11,38 +11,43 @@ export default function Solution() {
     () => {
       const copy = sectionRef.current?.querySelector<HTMLElement>(".solution-copy");
       if (!copy) return;
+      const mm = gsap.matchMedia();
 
-      const split = SplitText.create(copy, { type: "words" });
-      gsap.fromTo(
-        split.words,
-        { autoAlpha: 0.14, yPercent: 12 },
-        {
-          autoAlpha: 1,
-          yPercent: 0,
-          stagger: 0.5,
-          ease: "none",
-          scrollTrigger: {
-            trigger: copy,
-            start: "top 78%",
-            end: "bottom 46%",
-            scrub: 1,
+      mm.add(NO_MOTION_PREF, () => {
+        const split = SplitText.create(copy, { type: "words" });
+        gsap.fromTo(
+          split.words,
+          { autoAlpha: 0.14, yPercent: 12 },
+          {
+            autoAlpha: 1,
+            yPercent: 0,
+            stagger: 0.5,
+            ease: "none",
+            scrollTrigger: {
+              trigger: copy,
+              start: "top 78%",
+              end: "bottom 46%",
+              scrub: 1,
+            },
           },
-        },
-      );
+        );
 
-      gsap.fromTo(
-        ".solution-foot",
-        { y: 26, autoAlpha: 0 },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 0.8,
-          ease: EASE.soft,
-          scrollTrigger: { trigger: ".solution-foot", start: "top 88%" },
-        },
-      );
+        gsap.fromTo(
+          ".solution-foot",
+          { y: 26, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.8,
+            ease: EASE.soft,
+            scrollTrigger: { trigger: ".solution-foot", start: "top 88%" },
+          },
+        );
 
-      return () => split.revert();
+        return () => split.revert();
+      });
+
+      return () => mm.revert();
     },
     { scope: sectionRef },
   );

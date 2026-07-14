@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { EASE, gsap, useGSAP } from "@/lib/animation";
+import { EASE, NO_MOTION_PREF, gsap, useGSAP } from "@/lib/animation";
 
 const beats = [
   {
@@ -27,31 +27,39 @@ export default function Why() {
 
   useGSAP(
     () => {
-      gsap.utils.toArray<HTMLElement>(".why-item", sectionRef.current).forEach((item) => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const mm = gsap.matchMedia();
+
+      mm.add(NO_MOTION_PREF, () => {
+        gsap.utils.toArray<HTMLElement>(".why-item", section).forEach((item) => {
+          gsap.fromTo(
+            item,
+            { y: 64, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.9,
+              ease: EASE.soft,
+              scrollTrigger: { trigger: item, start: "top 74%" },
+            },
+          );
+        });
+
         gsap.fromTo(
-          item,
-          { y: 64, autoAlpha: 0 },
+          ".why-sticky",
+          { y: 40, autoAlpha: 0 },
           {
             y: 0,
             autoAlpha: 1,
             duration: 0.9,
             ease: EASE.soft,
-            scrollTrigger: { trigger: item, start: "top 74%" },
+            scrollTrigger: { trigger: section, start: "top 70%" },
           },
         );
       });
 
-      gsap.fromTo(
-        ".why-sticky",
-        { y: 40, autoAlpha: 0 },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 0.9,
-          ease: EASE.soft,
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
-        },
-      );
+      return () => mm.revert();
     },
     { scope: sectionRef },
   );

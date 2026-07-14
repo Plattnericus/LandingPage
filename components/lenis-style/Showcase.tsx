@@ -2,7 +2,15 @@
 
 import { useRef } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { EASE, MM_DESKTOP, PIN, gsap, useGSAP } from "@/lib/animation";
+import {
+  EASE,
+  MM_DESKTOP,
+  MM_MOBILE,
+  NO_MOTION_PREF,
+  PIN,
+  gsap,
+  useGSAP,
+} from "@/lib/animation";
 import { projects } from "@/lib/projects";
 import { siteConfig } from "@/lib/site";
 import ProjectPreview from "./ProjectPreview";
@@ -36,18 +44,46 @@ export default function Showcase() {
         });
       });
 
-      gsap.fromTo(
-        ".showcase-head > *",
-        { y: 44, autoAlpha: 0 },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 0.9,
-          stagger: 0.12,
-          ease: EASE.soft,
-          scrollTrigger: { trigger: section, start: "top 72%" },
-        },
-      );
+      media.add(MM_MOBILE, () => {
+        const items = gsap.utils.toArray<HTMLElement>(
+          ".showcase-card, .showcase-endcap",
+          section,
+        );
+
+        items.forEach((item) => {
+          gsap.fromTo(
+            item,
+            { y: 48, scale: 0.97, autoAlpha: 0 },
+            {
+              y: 0,
+              scale: 1,
+              autoAlpha: 1,
+              duration: 0.72,
+              ease: EASE.soft,
+              scrollTrigger: {
+                trigger: item,
+                start: "top 88%",
+                once: true,
+              },
+            },
+          );
+        });
+      });
+
+      media.add(NO_MOTION_PREF, () => {
+        gsap.fromTo(
+          ".showcase-head > *",
+          { y: 44, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: EASE.soft,
+            scrollTrigger: { trigger: section, start: "top 72%" },
+          },
+        );
+      });
 
       return () => media.revert();
     },

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowUpRight, Code } from "lucide-react";
-import { EASE, gsap, useGSAP } from "@/lib/animation";
+import { EASE, NO_MOTION_PREF, gsap, useGSAP } from "@/lib/animation";
 import NexorWordmark from "@/components/brand/NexorWordmark";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { siteConfig } from "@/lib/site";
@@ -20,56 +20,66 @@ export default function Hero() {
     () => {
       const section = sectionRef.current;
       if (!section) return;
-      const hwLetters = section.querySelectorAll(".hw-letter");
-      const hsLetters = section.querySelectorAll(".hs-letter");
-      const bottom = section.querySelectorAll(".hero-bottom > *");
+      const mm = gsap.matchMedia();
 
-      /* hidden until the loader hands off, without any flash */
-      gsap.set(hwLetters, { yPercent: 112 });
-      gsap.set(hsLetters, { yPercent: 118 });
-      gsap.set(bottom, { autoAlpha: 0 });
+      mm.add(NO_MOTION_PREF, () => {
+        const hwLetters = section.querySelectorAll(".hw-letter");
+        const hsLetters = section.querySelectorAll(".hs-letter");
+        const bottom = section.querySelectorAll(".hero-bottom > *");
 
-      /* letters pull up out of their masks in two alternating waves,
-         like the lenis.dev hero reveal */
-      const tl = gsap.timeline({ paused: true, defaults: { ease: EASE.appleOut } });
-      tl.to(
-        hwLetters,
-        {
-          yPercent: 0,
-          duration: 1.05,
-          stagger: (i) => (i % 2 === 0 ? 0 : 0.14) + i * 0.03,
-        },
-        0.05,
-      )
-        .to(
-          hsLetters,
+        /* hidden until the loader hands off, without any flash */
+        gsap.set(hwLetters, { yPercent: 112 });
+        gsap.set(hsLetters, { yPercent: 118 });
+        gsap.set(bottom, { autoAlpha: 0 });
+
+        /* letters pull up out of their masks in two alternating waves,
+           like the lenis.dev hero reveal */
+        const tl = gsap.timeline({ paused: true, defaults: { ease: EASE.appleOut } });
+        tl.to(
+          hwLetters,
           {
             yPercent: 0,
-            duration: 0.75,
-            stagger: (i) => (i % 2 === 0 ? 0 : 0.09) + i * 0.016,
+            duration: 1.05,
+            stagger: (i) => (i % 2 === 0 ? 0 : 0.14) + i * 0.03,
           },
-          0.45,
+          0.05,
         )
-        .to(
-          bottom,
-          { y: 0, autoAlpha: 1, duration: 0.7, stagger: 0.09, startAt: { y: 26 } },
-          0.9,
-        );
-      revealRef.current = tl;
-      if (revealRequestedRef.current) tl.play();
+          .to(
+            hsLetters,
+            {
+              yPercent: 0,
+              duration: 0.75,
+              stagger: (i) => (i % 2 === 0 ? 0 : 0.09) + i * 0.016,
+            },
+            0.45,
+          )
+          .to(
+            bottom,
+            { y: 0, autoAlpha: 1, duration: 0.7, stagger: 0.09, startAt: { y: 26 } },
+            0.9,
+          );
+        revealRef.current = tl;
+        if (revealRequestedRef.current) tl.play();
 
-      /* wordmark drifts up slightly as you leave the hero */
-      gsap.to(".hero-mark-wrap", {
-        yPercent: -14,
-        autoAlpha: 0.25,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: 1,
-        },
+        /* wordmark drifts up slightly as you leave the hero */
+        gsap.to(".hero-mark-wrap", {
+          yPercent: -14,
+          autoAlpha: 0.25,
+          ease: "none",
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom top",
+            scrub: 1,
+          },
+        });
+
+        return () => {
+          if (revealRef.current === tl) revealRef.current = null;
+        };
       });
+
+      return () => mm.revert();
     },
     { scope: sectionRef },
   );

@@ -4,7 +4,8 @@ import type { CSSProperties } from "react";
 import { useRef } from "react";
 import {
   EASE,
-  NO_MOTION_PREF,
+  MM_DESKTOP,
+  MM_MOBILE,
   ScrollTrigger,
   gsap,
   useGSAP,
@@ -20,7 +21,11 @@ const skills = [
   "APIs & backends",
 ];
 
-const CARD_TWEEN_SECONDS = 1.2;
+const TITLE_TWEEN_SECONDS = 1.05;
+const CARD_TWEEN_SECONDS = {
+  desktop: 0.82,
+  mobile: 0.64,
+} as const;
 
 export default function Heat() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -32,7 +37,13 @@ export default function Heat() {
 
       const mm = gsap.matchMedia();
 
-      mm.add(NO_MOTION_PREF, () => {
+      const setupCards = ({
+        duration,
+        hidden,
+      }: {
+        duration: number;
+        hidden: gsap.TweenVars;
+      }) => {
         const cards = gsap.utils.toArray<HTMLElement>(".heat-card", section);
         const titleLines = gsap.utils.toArray<HTMLElement>(
           ".heat-title-line-inner",
@@ -41,14 +52,13 @@ export default function Heat() {
 
         gsap.set(cards, {
           autoAlpha: 0,
-          xPercent: 100,
-          yPercent: 100,
+          ...hidden,
         });
 
         gsap.set(titleLines, { yPercent: 100 });
         gsap.to(titleLines, {
           yPercent: 0,
-          duration: CARD_TWEEN_SECONDS,
+          duration: TITLE_TWEEN_SECONDS,
           stagger: 0.2,
           ease: EASE.lenisExpo,
           scrollTrigger: {
@@ -72,14 +82,17 @@ export default function Heat() {
               autoAlpha: active ? 1 : 0,
               xPercent: active ? 0 : 100,
               yPercent: active ? 0 : 100,
+              scale: active ? 1 : hidden.scale,
             };
+
+            if (!active) Object.assign(vars, hidden);
 
             if (immediate) {
               gsap.set(card, vars);
             } else {
               gsap.to(card, {
                 ...vars,
-                duration: CARD_TWEEN_SECONDS,
+                duration,
                 ease: EASE.lenisExpo,
                 overwrite: "auto",
               });
@@ -89,20 +102,22 @@ export default function Heat() {
           activeCount = clamped;
         };
 
+        const stageForProgress = (progress: number) =>
+          Math.min(cards.length, Math.floor(progress * cards.length) + 1);
+
         const cardTrigger = ScrollTrigger.create({
           trigger: section,
-          // Exact lenis.dev range: sectionTop - 2H -> sectionBottom - H.
-          start: () => section.offsetTop - window.innerHeight * 2,
-          end: () =>
-            section.offsetTop + section.offsetHeight - window.innerHeight,
+          // The first card is already waiting when the sticky frame locks. The
+          // remaining beats are spread evenly across the shortened responsive
+          // section instead of the old fixed 16-screen marathon.
+          start: "top top",
+          end: "bottom bottom",
           invalidateOnRefresh: true,
           onUpdate: (self) => {
-            const stage = Math.floor(self.progress * (cards.length + 1));
-            showCardsThrough(stage);
+            showCardsThrough(stageForProgress(self.progress));
           },
           onRefresh: (self) => {
-            const stage = Math.floor(self.progress * (cards.length + 1));
-            showCardsThrough(stage, true);
+            showCardsThrough(stageForProgress(self.progress), true);
           },
         });
 
@@ -118,9 +133,7 @@ export default function Heat() {
         };
         window.addEventListener("resize", refreshAfterWidthChange);
 
-        const initialStage = Math.floor(
-          cardTrigger.progress * (cards.length + 1),
-        );
+        const initialStage = stageForProgress(cardTrigger.progress);
         showCardsThrough(initialStage, true);
 
         return () => {
@@ -129,7 +142,21 @@ export default function Heat() {
           cardTrigger.kill();
           gsap.killTweensOf([...cards, ...titleLines]);
         };
-      });
+      };
+
+      mm.add(MM_DESKTOP, () =>
+        setupCards({
+          duration: CARD_TWEEN_SECONDS.desktop,
+          hidden: { xPercent: 72, yPercent: 72, scale: 0.96 },
+        }),
+      );
+
+      mm.add(MM_MOBILE, () =>
+        setupCards({
+          duration: CARD_TWEEN_SECONDS.mobile,
+          hidden: { xPercent: 18, yPercent: 34, scale: 0.94 },
+        }),
+      );
 
       return () => mm.revert();
     },

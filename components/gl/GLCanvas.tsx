@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
@@ -48,10 +48,6 @@ const HAND_REVEAL_AT = 0.99;
 /** Signed, lightly smoothed px/frame scroll speed — positive while scrolling
     down. Drives the starfield's warp-tunnel travel and streak length. */
 const warpVelocity: Progress = { value: 0 };
-
-const prefersStill =
-  typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const ARM_MODEL_URL = "/models/arm/arm.glb";
 
@@ -689,8 +685,6 @@ function HandRig() {
 /* ------------------------------------------------------------------ */
 
 function Scene() {
-  const withHand = !prefersStill;
-
   return (
     <>
       <ambientLight color="#a29a92" intensity={1} />
@@ -700,26 +694,81 @@ function Scene() {
       <ScrollSync />
       <Starfield />
       <LightParticles />
-      {withHand && <EarlyHandRig />}
-      {withHand && <HandRig />}
+      <EarlyHandRig />
+      <HandRig />
     </>
   );
 }
 
+type GLPreferences = {
+  reducedMotion: boolean;
+  compactViewport: boolean;
+};
+
+function useGLPreferences() {
+  const [preferences, setPreferences] = useState<GLPreferences | null>(null);
+
+  useEffect(() => {
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const compactViewportQuery = window.matchMedia("(max-width: 899px)");
+    const syncPreferences = () => {
+      const next = {
+        reducedMotion: reducedMotionQuery.matches,
+        compactViewport: compactViewportQuery.matches,
+      };
+      setPreferences((current) =>
+        current?.reducedMotion === next.reducedMotion &&
+        current.compactViewport === next.compactViewport
+          ? current
+          : next,
+      );
+    };
+
+    /* Keep the server and first client render identical, then resolve both
+       media queries before mounting a potentially expensive WebGL context. */
+    const initialFrame = window.requestAnimationFrame(syncPreferences);
+    reducedMotionQuery.addEventListener("change", syncPreferences);
+    compactViewportQuery.addEventListener("change", syncPreferences);
+
+    return () => {
+      window.cancelAnimationFrame(initialFrame);
+      reducedMotionQuery.removeEventListener("change", syncPreferences);
+      compactViewportQuery.removeEventListener("change", syncPreferences);
+    };
+  }, []);
+
+  return preferences;
+}
+
 export default function GLCanvas() {
+  const preferences = useGLPreferences();
+
+  useEffect(() => {
+    if (!preferences?.reducedMotion) return;
+
+    /* No Canvas is created in reduced-motion mode, but the intro loader must
+       receive the same readiness contract as it does from Canvas.onCreated. */
+    const readyFrame = window.requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent("gl-ready"));
+    });
+    return () => window.cancelAnimationFrame(readyFrame);
+  }, [preferences?.reducedMotion]);
+
   return (
     <div className="gl-canvas" aria-hidden="true">
-      <Canvas
-        dpr={[1, 1.75]}
-        camera={{ position: [0, 0, 6], fov: 42 }}
-        gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
-        onCreated={() => {
-          /* the intro loader listens for this to complete its progress */
-          window.dispatchEvent(new CustomEvent("gl-ready"));
-        }}
-      >
-        <Scene />
-      </Canvas>
+      {preferences && !preferences.reducedMotion && (
+        <Canvas
+          dpr={preferences.compactViewport ? [1, 1.25] : [1, 1.75]}
+          camera={{ position: [0, 0, 6], fov: 42 }}
+          gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+          onCreated={() => {
+            /* the intro loader listens for this to complete its progress */
+            window.dispatchEvent(new CustomEvent("gl-ready"));
+          }}
+        >
+          <Scene />
+        </Canvas>
+      )}
     </div>
   );
 }
