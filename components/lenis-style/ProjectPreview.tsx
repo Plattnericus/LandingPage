@@ -7,6 +7,20 @@ import type { ProjectPreview as ProjectPreviewData } from "@/lib/projects";
 
 const SWAP_DWELL_MS = [3990, 3670] as const;
 
+/** Two extra goes after the first failure, spaced far enough apart to ride out
+    a brief drop rather than hammering a server that's already struggling. */
+const RETRY_LIMIT = 2;
+const RETRY_BACKOFF_MS = 900;
+
+/** A failed media request is usually a blip — a dropped connection, a proxy
+    hiccup, an extension racing the request. Re-requesting the identical URL
+    can simply be answered from the browser's cached failure, so every retry
+    carries a marker that forces a genuinely new fetch. */
+function withAttempt(src: string, attempt: number) {
+  if (attempt === 0) return src;
+  return `${src}${src.includes("?") ? "&" : "?"}reload=${attempt}`;
+}
+
 type ProjectPreviewProps = {
   preview: ProjectPreviewData;
   name: string;
