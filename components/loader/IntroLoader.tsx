@@ -4,11 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import NexorWordmark from "@/components/brand/NexorWordmark";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
-const REVEAL_AT_MS = 180;
-const EXIT_EARLIEST_MS = 1900;
-const MERGE_DELAY_MS = 60;
-const EXIT_DURATION_MS = 1400;
-const MAX_READY_WAIT_MS = 3400;
+/* The original ~3.3s intro spent roughly 400ms of that just standing still,
+   waiting on a floor well past the point the glyphs had finished rising.
+   Rather than speed the motion up to claw that back — which made the rise
+   feel hurried — the time comes out of the dead pause: the glyph rise keeps
+   a generous 850ms with a 35ms stagger, and the exit begins the moment the
+   last glyph lands. Whole intro reads unhurried and still ends at ~1.8s.
+   Every value below is measured from first paint, matching the CSS animation
+   in globals.css that drives the rise — keep the two in step. */
+
+/* The rise itself lives entirely in CSS (100ms delay + 5*35ms stagger +
+   850ms), landing the last glyph at ~1125ms after paint. */
+const EXIT_EARLIEST_MS = 1130;
+const MERGE_DELAY_MS = 45;
+/* Deliberately a touch under the 0.72s CSS exit: the curtain is already off
+   screen by then, so unmounting early is invisible and trims the tail. */
+const EXIT_DURATION_MS = 670;
+const MAX_READY_WAIT_MS = 1900;
 
 /**
  * Lenis-style intro architecture using the site's own NEXOR wordmark:
@@ -97,22 +109,31 @@ export default function IntroLoader() {
     };
     window.addEventListener("gl-ready", onGlReady, { once: true });
 
-    const revealTimer = window.setTimeout(() => {
-      root.classList.add("intro-show");
-    }, REVEAL_AT_MS);
+    /* The glyph rise is driven by a pure CSS animation that starts the moment
+       the loader paints, so it no longer waits on React. Every timer below is
+       anchored to that same first paint rather than to whenever this effect
+       happens to commit — hydration cost varies wildly by device, and pinning
+       the schedule to it meant a fast machine saw the letters move almost at
+       once while a slow one stared at a dead orange rectangle for half a
+       second first. Anchoring to paint makes the intro run identically on
+       both, which is what actually makes it feel deliberate. */
+    const paint = performance
+      .getEntriesByType("paint")
+      .find((entry) => entry.name === "first-contentful-paint");
+    const sincePaint = paint ? performance.now() - paint.startTime : 0;
+    const after = (target: number) => Math.max(0, target - sincePaint);
 
     const earliestTimer = window.setTimeout(() => {
       earliestReached = true;
       maybeStartExit();
-    }, EXIT_EARLIEST_MS);
+    }, after(EXIT_EARLIEST_MS));
 
     /* Slow or failed WebGL/font loads must never hold the page hostage. */
-    const capTimer = window.setTimeout(startExit, MAX_READY_WAIT_MS);
+    const capTimer = window.setTimeout(startExit, after(MAX_READY_WAIT_MS));
 
     return () => {
       window.removeEventListener("load", onLoad);
       window.removeEventListener("gl-ready", onGlReady);
-      window.clearTimeout(revealTimer);
       window.clearTimeout(earliestTimer);
       window.clearTimeout(capTimer);
       window.clearTimeout(mergeTimer);

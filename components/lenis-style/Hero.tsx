@@ -61,6 +61,43 @@ export default function Hero() {
         revealRef.current = tl;
         if (revealRequestedRef.current) tl.play();
 
+        /* The cue draws itself: the shaft strokes on from the top, the head
+           lands under it, both hold, then the whole arrow slips downward and
+           out — the gesture it's asking for. Dash length is the shaft's own
+           length (y 1 → 43), so the stroke reveal lines up exactly with the
+           geometry rather than being eyeballed. */
+        const SHAFT = 42;
+        gsap.set(".hero-cue-shaft", {
+          strokeDasharray: SHAFT,
+          strokeDashoffset: SHAFT,
+          opacity: 1,
+          y: 0,
+        });
+        gsap.set(".hero-cue-head", { opacity: 0, y: -5 });
+
+        gsap
+          .timeline({ repeat: -1, repeatDelay: 0.5 })
+          .to(".hero-cue-shaft", {
+            strokeDashoffset: 0,
+            duration: 0.6,
+            ease: "power2.out",
+          })
+          .to(
+            ".hero-cue-head",
+            { opacity: 1, y: 0, duration: 0.32, ease: "power2.out" },
+            "-=0.22",
+          )
+          .to(
+            ".hero-cue-arrow",
+            { y: 7, opacity: 0, duration: 0.42, ease: "power2.in" },
+            "+=0.55",
+          )
+          /* Reset while invisible: a full dashoffset already hides the shaft,
+             so the next cycle can start from a clean slate without a flash. */
+          .set(".hero-cue-shaft", { strokeDashoffset: SHAFT })
+          .set(".hero-cue-head", { opacity: 0, y: -5 })
+          .set(".hero-cue-arrow", { y: 0, opacity: 1 });
+
         /* wordmark drifts up slightly as you leave the hero */
         gsap.to(".hero-mark-wrap", {
           yPercent: -14,
@@ -73,6 +110,27 @@ export default function Hero() {
             scrub: 1,
           },
         });
+
+        /* the credit line has said its piece by the time you start moving —
+           it lifts and fades over the first stretch of scroll rather than
+           riding along until the viewport edge clips it. fromTo (not to)
+           keeps it clear of the reveal tween above, which owns the same
+           property while the page is still held at scroll 0. */
+        gsap.fromTo(
+          ".hero-by",
+          { autoAlpha: 1, y: 0 },
+          {
+            autoAlpha: 0,
+            y: -18,
+            ease: "none",
+            scrollTrigger: {
+              trigger: section,
+              start: "top top",
+              end: "+=260",
+              scrub: 0.6,
+            },
+          },
+        );
 
         return () => {
           if (revealRef.current === tl) revealRef.current = null;
@@ -119,9 +177,42 @@ export default function Hero() {
 
       <div className="hero-bottom">
         <p className="hero-cue" aria-hidden="true">
-          Scroll
-          <br />
-          to explore
+          {/* The rule that used to sit here is now the arrow's own shaft, so
+              the cue reads as one mark instead of a line plus a label. */}
+          <svg
+            className="hero-cue-arrow"
+            viewBox="0 0 14 52"
+            width="14"
+            height="52"
+            fill="none"
+            aria-hidden="true"
+          >
+            {/* The shaft runs past where the head's arms cross and stops at
+                the tip, so the two strokes fuse into one solid arrow — ending
+                it early left a notch at the inside of the V. */}
+            <line
+              className="hero-cue-shaft"
+              x1="7"
+              y1="1"
+              x2="7"
+              y2="43"
+              stroke="currentColor"
+              strokeWidth="3"
+            />
+            <path
+              className="hero-cue-head"
+              d="M2 34 L7 44 L12 34"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="butt"
+              strokeLinejoin="miter"
+            />
+          </svg>
+          <span>
+            Scroll
+            <br />
+            to explore
+          </span>
         </p>
         <p className="hero-by">
           Fullstack · DevOps · Security

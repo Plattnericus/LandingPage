@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
@@ -487,23 +487,47 @@ function SilverChromeEnvironment() {
   const gl = useThree((state) => state.gl);
 
   useEffect(() => {
-    const pmrem = new THREE.PMREMGenerator(gl);
-    const room = new RoomEnvironment();
-    const environmentTarget = pmrem.fromScene(room, 0.03);
-    const environment = environmentTarget.texture;
+    /* Prefiltering the room environment is a few hundred ms of synchronous
+       GPU+CPU work. Running it on mount lands it squarely inside the intro
+       loader's glyph animation, stalling the main thread long enough to
+       visibly stutter the reveal and push back its timers. Nothing needs
+       this map until the silver hand appears in the light half of the page,
+       far below the fold, so it waits for an idle gap instead. The timeout
+       guarantees it still resolves on busy machines that never go idle. */
+    let cancelled = false;
+    let environmentTarget: THREE.WebGLRenderTarget | null = null;
 
-    lateSilverHandMaterial.envMap = environment;
-    lateSilverHandMaterial.needsUpdate = true;
+    const build = () => {
+      if (cancelled) return;
+      const pmrem = new THREE.PMREMGenerator(gl);
+      const room = new RoomEnvironment();
+      environmentTarget = pmrem.fromScene(room, 0.03);
 
-    room.dispose();
-    pmrem.dispose();
+      lateSilverHandMaterial.envMap = environmentTarget.texture;
+      lateSilverHandMaterial.needsUpdate = true;
+
+      room.dispose();
+      pmrem.dispose();
+    };
+
+    const idle =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(build, { timeout: 2500 })
+        : window.setTimeout(build, 1200);
 
     return () => {
-      if (lateSilverHandMaterial.envMap === environment) {
-        lateSilverHandMaterial.envMap = null;
-        lateSilverHandMaterial.needsUpdate = true;
+      cancelled = true;
+      if (typeof window.cancelIdleCallback === "function" && typeof idle === "number") {
+        window.cancelIdleCallback(idle);
       }
-      environmentTarget.dispose();
+      window.clearTimeout(idle as number);
+      if (environmentTarget) {
+        if (lateSilverHandMaterial.envMap === environmentTarget.texture) {
+          lateSilverHandMaterial.envMap = null;
+          lateSilverHandMaterial.needsUpdate = true;
+        }
+        environmentTarget.dispose();
+      }
     };
   }, [gl]);
 
@@ -700,6 +724,29 @@ function Scene() {
   );
 }
 
+/** Some privacy extensions and locked-down GPUs make WebGL context creation
+    throw (three/r3f surface that as a render-time error). Without a boundary
+    here, that error is uncaught and Next's root error boundary tears down
+    the entire page for a failure that should only cost the decorative 3D
+    layer. Also fires gl-ready so the intro loader isn't left waiting on a
+    signal that will now never arrive from Canvas.onCreated. */
+class GLErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.warn("GLCanvas: WebGL scene failed, hiding the 3D layer.", error);
+    window.dispatchEvent(new CustomEvent("gl-ready"));
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 type GLPreferences = {
   reducedMotion: boolean;
   compactViewport: boolean;
@@ -724,14 +771,18 @@ function useGLPreferences() {
       );
     };
 
-    /* Keep the server and first client render identical, then resolve both
-       media queries before mounting a potentially expensive WebGL context. */
-    const initialFrame = window.requestAnimationFrame(syncPreferences);
+    /* Keep the server and first client render identical (initial state is
+       null, matching SSR), then resolve both media queries as soon as this
+       effect commits. This used to be deferred one requestAnimationFrame,
+       but rAF is throttled or never fires at all in backgrounded/prerendered
+       tabs — that left `preferences` stuck at null forever and silently
+       dropped the whole 3D scene with no error. Reading matchMedia straight
+       from the effect body has no such dependency on the paint loop. */
+    syncPreferences();
     reducedMotionQuery.addEventListener("change", syncPreferences);
     compactViewportQuery.addEventListener("change", syncPreferences);
 
     return () => {
-      window.cancelAnimationFrame(initialFrame);
       reducedMotionQuery.removeEventListener("change", syncPreferences);
       compactViewportQuery.removeEventListener("change", syncPreferences);
     };
@@ -757,17 +808,28 @@ export default function GLCanvas() {
   return (
     <div className="gl-canvas" aria-hidden="true">
       {preferences && !preferences.reducedMotion && (
-        <Canvas
-          dpr={preferences.compactViewport ? [1, 1.25] : [1, 1.75]}
-          camera={{ position: [0, 0, 6], fov: 42 }}
-          gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
-          onCreated={() => {
-            /* the intro loader listens for this to complete its progress */
-            window.dispatchEvent(new CustomEvent("gl-ready"));
-          }}
-        >
-          <Scene />
-        </Canvas>
+        <GLErrorBoundary>
+          <Canvas
+            dpr={preferences.compactViewport ? [1, 1.25] : [1, 1.75]}
+            camera={{ position: [0, 0, 6], fov: 42 }}
+            gl={{
+              alpha: true,
+              antialias: true,
+              powerPreference: "high-performance",
+              /* Let the browser fall back to a software/ANGLE renderer
+                 instead of refusing context creation outright — locked-down
+                 corporate machines and some older mobile GPUs disable
+                 hardware acceleration but can still render WebGL. */
+              failIfMajorPerformanceCaveat: false,
+            }}
+            onCreated={() => {
+              /* the intro loader listens for this to complete its progress */
+              window.dispatchEvent(new CustomEvent("gl-ready"));
+            }}
+          >
+            <Scene />
+          </Canvas>
+        </GLErrorBoundary>
       )}
     </div>
   );

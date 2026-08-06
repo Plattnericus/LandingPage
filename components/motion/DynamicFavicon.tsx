@@ -195,15 +195,37 @@ export default function DynamicFavicon() {
     if (!ctx || typeof ctx.roundRect !== "function") return;
 
     const baseTitle = document.title;
-    let links = Array.from(
-      document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]'),
-    );
-    if (links.length === 0) {
-      const link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-      links = [link];
-    }
+
+    /* Next's App Router metadata (the static app/icon.tsx + favicon.ico
+       links) can be re-inserted into <head> by the client runtime after
+       this effect has already taken over the original tags — e.g. right
+       after a Fast Refresh or a client-only metadata resolution pass. Those
+       fresh copies silently outrank our canvas-driven one and the tab reverts
+       to the static "N" tile. This used to delete the rival tags outright,
+       but React 19 hoists and tracks <link> tags itself; ripping one out
+       from under it left React holding a reference to an already-detached
+       node, and its next reconciliation pass crashed trying to remove a
+       child from a parent that was already null. Repointing every matching
+       tag's href instead — never removing a node React didn't hand us — gets
+       the same visual result without fighting React for ownership. */
+    const claimFavicon = (url: string) => {
+      const links = document.querySelectorAll<HTMLLinkElement>(
+        'link[rel="icon"], link[rel="shortcut icon"]',
+      );
+      if (links.length === 0) {
+        const link = document.createElement("link");
+        link.rel = "icon";
+        link.type = "image/png";
+        link.href = url;
+        document.head.appendChild(link);
+        return;
+      }
+      links.forEach((link) => {
+        link.type = "image/png";
+        link.href = url;
+      });
+    };
+    let lastUrl = "";
 
     let progress = 0;
     let glyph: GlyphId = "n";
@@ -237,14 +259,20 @@ export default function DynamicFavicon() {
       }
 
       const url = canvas.toDataURL("image/png");
-      links.forEach((link) => {
-        link.type = "image/png";
-        link.href = url;
-      });
+      lastUrl = url;
+      claimFavicon(url);
     };
 
     draw("active");
-    if (reduce) return;
+
+    /* Catches any rel="icon" tag inserted after this point (Next's own
+       re-insertion, a Fast Refresh, another script) and repoints it to the
+       current frame the same tick, so the tab icon can never drift back to
+       a static one. */
+    const headObserver = new MutationObserver(() => claimFavicon(lastUrl));
+    headObserver.observe(document.head, { childList: true });
+
+    if (reduce) return () => headObserver.disconnect();
 
     const triggers: ScrollTrigger[] = [];
     const popProxy = { value: 1 };
@@ -346,6 +374,7 @@ export default function DynamicFavicon() {
       popTween?.kill();
       typeTween?.kill();
       document.removeEventListener("visibilitychange", onVisibility);
+      headObserver.disconnect();
       document.title = baseTitle;
     };
   }, []);
