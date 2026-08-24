@@ -39,6 +39,48 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
   const [replayKeys, setReplayKeys] = useState<[number, number]>([0, 0]);
   const [loadedFrames, setLoadedFrames] = useState<[boolean, boolean]>([false, false]);
 
+  /* Retry bookkeeping for every media element this card can show. Bumping
+     an attempt count re-requests the same asset through withAttempt, so a
+     blip self-heals instead of leaving the card stuck on a broken frame or
+     poster for good. */
+  const [posterAttempt, setPosterAttempt] = useState(0);
+  const [videoAttempt, setVideoAttempt] = useState(0);
+  const [frameAttempts, setFrameAttempts] = useState<[number, number]>([0, 0]);
+  const retryTimers = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const timers = retryTimers.current;
+    return () => {
+      Object.values(timers).forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
+
+  const retry = (key: string, run: () => void) => {
+    window.clearTimeout(retryTimers.current[key]);
+    retryTimers.current[key] = window.setTimeout(run, RETRY_BACKOFF_MS);
+  };
+
+  const handlePosterError = () => {
+    if (posterAttempt >= RETRY_LIMIT) return;
+    retry("poster", () => setPosterAttempt((attempt) => attempt + 1));
+  };
+
+  const handleVideoError = () => {
+    if (videoAttempt >= RETRY_LIMIT) return;
+    retry("video", () => setVideoAttempt((attempt) => attempt + 1));
+  };
+
+  const handleFrameError = (index: 0 | 1) => {
+    if (frameAttempts[index] >= RETRY_LIMIT) return;
+    retry(`frame${index}`, () =>
+      setFrameAttempts((attempts) => {
+        const next: [number, number] = [...attempts];
+        next[index] += 1;
+        return next;
+      }),
+    );
+  };
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -157,7 +199,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
           <video
             className="sc-media sc-video"
             ref={videoRef}
-            src={loadMedia ? preview.src : undefined}
+            src={loadMedia ? withAttempt(preview.src, videoAttempt) : undefined}
             muted
             loop
             playsInline
@@ -166,43 +208,47 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
             aria-hidden="true"
             style={{ objectPosition }}
             onPlaying={() => setVideoPlaying(true)}
+            onError={handleVideoError}
           />
           {(!videoPlaying || reducedMotion) && (
             <Image
               className="sc-media sc-poster"
-              src={preview.poster}
+              src={withAttempt(preview.poster, posterAttempt)}
               alt=""
               fill
               quality={78}
               sizes="(max-width: 899px) 84vw, 640px"
               aria-hidden="true"
               style={{ objectPosition }}
+              onError={handlePosterError}
             />
           )}
         </>
       ) : reducedMotion ? (
         <Image
           className="sc-media"
-          src={preview.poster}
+          src={withAttempt(preview.poster, posterAttempt)}
           alt=""
           fill
           quality={78}
           sizes="(max-width: 899px) 84vw, 640px"
           aria-hidden="true"
           style={{ objectPosition }}
+          onError={handlePosterError}
         />
       ) : (
         <>
           {!loadedFrames[0] && (
             <Image
               className="sc-media sc-poster"
-              src={preview.poster}
+              src={withAttempt(preview.poster, posterAttempt)}
               alt=""
               fill
               quality={78}
               sizes="(max-width: 899px) 84vw, 640px"
               aria-hidden="true"
               style={{ objectPosition }}
+              onError={handlePosterError}
             />
           )}
           {preview.sources.map((src, index) => (
@@ -214,9 +260,9 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
               {/* The user supplied animated GIFs are kept as the source of truth. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                key={`${src}-${replayKeys[index]}`}
+                key={`${src}-${replayKeys[index]}-${frameAttempts[index]}`}
                 className="sc-media"
-                src={loadMedia ? src : undefined}
+                src={loadMedia ? withAttempt(src, frameAttempts[index]) : undefined}
                 alt=""
                 loading="lazy"
                 decoding="async"
@@ -230,6 +276,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
                     return next;
                   })
                 }
+                onError={() => handleFrameError(index as 0 | 1)}
               />
             </span>
           ))}

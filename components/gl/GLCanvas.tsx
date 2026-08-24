@@ -51,7 +51,14 @@ const warpVelocity: Progress = { value: 0 };
 
 const ARM_MODEL_URL = "/models/arm/arm.glb";
 
-useGLTF.preload(ARM_MODEL_URL);
+/* Skip the eager preload under reduced motion — the Canvas below never
+   mounts in that mode, so nothing would ever use this GLB. Read directly at
+   module scope rather than from a hook: this file is client-only (evaluated
+   once in the browser, never during SSR), and preloading needs to fire
+   before any component gets a chance to render anyway. */
+if (typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  useGLTF.preload(ARM_MODEL_URL);
+}
 
 /* ------------------------------------------------------------------ */
 /* Scroll sync — measured straight from the DOM every frame, so pin    */
@@ -750,7 +757,29 @@ class GLErrorBoundary extends Component<{ children: ReactNode }, { failed: boole
 type GLPreferences = {
   reducedMotion: boolean;
   compactViewport: boolean;
+  glSupported: boolean;
 };
+
+/** Synchronous WebGL2 capability probe. three r163+ only ever requests a
+    'webgl2' context (no WebGL1 fallback — see WebGLRenderer's constructor),
+    so that's the exact check that predicts whether mounting <Canvas> below
+    can succeed. Running it upfront means a device without WebGL2 (no
+    hardware acceleration on some corporate/VM setups, an old browser, WebGL
+    disabled outright) skips the attempt entirely instead of relying on the
+    failure path to catch it after the fact. The throwaway context is force-
+    lost right away so it doesn't sit on the browser's small live-context
+    budget before the real canvas asks for its own. */
+function detectWebGL2Support() {
+  try {
+    const probe = document.createElement("canvas");
+    const gl = probe.getContext("webgl2", { failIfMajorPerformanceCaveat: false });
+    if (!gl) return false;
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function useGLPreferences() {
   const [preferences, setPreferences] = useState<GLPreferences | null>(null);
@@ -758,14 +787,17 @@ function useGLPreferences() {
   useEffect(() => {
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const compactViewportQuery = window.matchMedia("(max-width: 899px)");
+    const glSupported = detectWebGL2Support();
     const syncPreferences = () => {
       const next = {
         reducedMotion: reducedMotionQuery.matches,
         compactViewport: compactViewportQuery.matches,
+        glSupported,
       };
       setPreferences((current) =>
         current?.reducedMotion === next.reducedMotion &&
-        current.compactViewport === next.compactViewport
+        current.compactViewport === next.compactViewport &&
+        current.glSupported === next.glSupported
           ? current
           : next,
       );
@@ -793,21 +825,53 @@ function useGLPreferences() {
 
 export default function GLCanvas() {
   const preferences = useGLPreferences();
+  /* Sticky for the lifetime of the page: once the runtime safety net below
+     trips, we stop trying to render the scene rather than bouncing back and
+     forth on every subsequent rejection. */
+  const [glFailed, setGlFailed] = useState(false);
+  const canRenderScene =
+    !!preferences && !preferences.reducedMotion && preferences.glSupported && !glFailed;
 
   useEffect(() => {
-    if (!preferences?.reducedMotion) return;
+    if (!preferences || canRenderScene) return;
 
-    /* No Canvas is created in reduced-motion mode, but the intro loader must
-       receive the same readiness contract as it does from Canvas.onCreated. */
+    /* No Canvas gets mounted below — reduced motion, no WebGL2, or the
+       runtime failure caught further down — but the intro loader must still
+       receive the same readiness contract it would from Canvas.onCreated. */
     const readyFrame = window.requestAnimationFrame(() => {
       window.dispatchEvent(new CustomEvent("gl-ready"));
     });
     return () => window.cancelAnimationFrame(readyFrame);
-  }, [preferences?.reducedMotion]);
+  }, [preferences, canRenderScene]);
+
+  useEffect(() => {
+    if (!canRenderScene) return;
+
+    /* Safety net for a real gap in react-three-fiber: Canvas constructs the
+       WebGLRenderer inside an async function that gets called without being
+       awaited or given a .catch(), so a context-creation failure that slips
+       past the synchronous probe above (context lost mid-init, GPU process
+       killed, a driver crash on first use) surfaces as an unhandled promise
+       rejection instead of a thrown render error. It never enters React's
+       render/commit cycle at all, so GLErrorBoundary can't see it. Treat
+       that one failure mode the same way componentDidCatch does: warn once,
+       stop trying to render the scene, and unblock the intro loader. */
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const { reason } = event;
+      const message = reason instanceof Error ? reason.message : String(reason ?? "");
+      if (!/webgl/i.test(message)) return;
+      event.preventDefault();
+      console.warn("GLCanvas: WebGL context failed after mount, hiding the 3D layer.", reason);
+      setGlFailed(true);
+    };
+
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
+    return () => window.removeEventListener("unhandledrejection", onUnhandledRejection);
+  }, [canRenderScene]);
 
   return (
     <div className="gl-canvas" aria-hidden="true">
-      {preferences && !preferences.reducedMotion && (
+      {preferences && canRenderScene && (
         <GLErrorBoundary>
           <Canvas
             dpr={preferences.compactViewport ? [1, 1.25] : [1, 1.75]}

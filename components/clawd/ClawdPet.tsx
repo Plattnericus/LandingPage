@@ -206,6 +206,10 @@ export default function ClawdPet() {
      can replace it with nothing in between. */
   const [displaySrc, setDisplaySrc] = useState(CLAWD_GIF.IDLE);
   useEffect(() => {
+    /* Gated on ready for the same reason the sprite itself is: with reduced
+       motion (or before the intro finishes) Clawd never mounts, so this
+       decode-ahead fetch would otherwise pull a GIF nobody is going to see. */
+    if (!ready) return;
     const nextSrc = CLAWD_GIF[state.clip];
     let cancelled = false;
     const img = new Image();
@@ -222,7 +226,7 @@ export default function ClawdPet() {
     return () => {
       cancelled = true;
     };
-  }, [state.clip]);
+  }, [state.clip, ready]);
 
   /* speech bubble pops in, then writes itself out letter by letter.
      useGSAP (not a raw useEffect) so cleanup/rebuild on every state change
