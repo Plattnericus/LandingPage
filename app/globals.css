@@ -678,7 +678,11 @@ main {
 .rt-second {
   margin: 0;
   font-family: var(--font-head);
-  font-size: 8.61538vh;
+  /* vh-only sizing overflows its box on narrow-but-tall viewports (the vh
+     term keeps climbing while the text has no matching width to grow into)
+     — the vw ceiling keeps "web experiences" inside .rt-first's box on any
+     aspect ratio, desktop's wide-relative-to-tall viewports just never hit it. */
+  font-size: min(8.61538vh, 11vw);
   font-weight: 400;
   line-height: 0.95;
   text-transform: uppercase;
@@ -762,7 +766,9 @@ main {
 
   .rt-first,
   .rt-second {
-    font-size: 19.60784vh;
+    /* same overflow guard as the base rule, just a looser ceiling since this
+       tier only ever runs at 900px+ */
+    font-size: min(19.60784vh, 22vw);
   }
 
   .rt-enter {
