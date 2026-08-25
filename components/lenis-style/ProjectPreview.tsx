@@ -34,7 +34,6 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
   const [loadMedia, setLoadMedia] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
   const [activeFrame, setActiveFrame] = useState<0 | 1>(0);
   const [replayKeys, setReplayKeys] = useState<[number, number]>([0, 0]);
   const [loadedFrames, setLoadedFrames] = useState<[boolean, boolean]>([false, false]);
@@ -85,21 +84,13 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     const root = rootRef.current;
     if (!root) return;
 
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncMotionPreference = () => setReducedMotion(motionQuery.matches);
-    syncMotionPreference();
-    motionQuery.addEventListener("change", syncMotionPreference);
-
     if (!("IntersectionObserver" in window)) {
       /* deferred a frame so setState stays out of the effect body itself */
       const raf = requestAnimationFrame(() => {
         setLoadMedia(true);
         setIsActive(true);
       });
-      return () => {
-        motionQuery.removeEventListener("change", syncMotionPreference);
-        cancelAnimationFrame(raf);
-      };
+      return () => cancelAnimationFrame(raf);
     }
 
     const loadObserver = new IntersectionObserver(
@@ -120,7 +111,6 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     activityObserver.observe(root);
 
     return () => {
-      motionQuery.removeEventListener("change", syncMotionPreference);
       loadObserver.disconnect();
       activityObserver.disconnect();
     };
@@ -131,7 +121,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     const video = videoRef.current;
     if (!video) return;
 
-    if (!isActive || reducedMotion) {
+    if (!isActive) {
       video.pause();
       return;
     }
@@ -139,7 +129,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     void video.play().catch(() => {
       /* The muted poster stays visible if a browser blocks autoplay. */
     });
-  }, [isActive, preview.kind, reducedMotion]);
+  }, [isActive, preview.kind]);
 
   useEffect(() => {
     if (preview.kind !== "swap") {
@@ -148,7 +138,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     }
 
     const ready = loadedFrames[0] && loadedFrames[1];
-    const shouldRun = isActive && !reducedMotion && ready;
+    const shouldRun = isActive && ready;
     if (shouldRun && !wasSwapActiveRef.current) {
       setReplayKeys((keys) => {
         const next: [number, number] = [...keys];
@@ -157,13 +147,12 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
       });
     }
     wasSwapActiveRef.current = shouldRun;
-  }, [activeFrame, isActive, loadedFrames, preview.kind, reducedMotion]);
+  }, [activeFrame, isActive, loadedFrames, preview.kind]);
 
   useEffect(() => {
     if (
       preview.kind !== "swap" ||
       !isActive ||
-      reducedMotion ||
       !loadedFrames[0] ||
       !loadedFrames[1]
     ) {
@@ -181,7 +170,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     }, SWAP_DWELL_MS[activeFrame]);
 
     return () => window.clearTimeout(timer);
-  }, [activeFrame, isActive, loadedFrames, preview.kind, reducedMotion]);
+  }, [activeFrame, isActive, loadedFrames, preview.kind]);
 
   const objectPosition = preview.objectPosition ?? "center center";
 
@@ -210,7 +199,7 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
             onPlaying={() => setVideoPlaying(true)}
             onError={handleVideoError}
           />
-          {(!videoPlaying || reducedMotion) && (
+          {!videoPlaying && (
             <Image
               className="sc-media sc-poster"
               src={withAttempt(preview.poster, posterAttempt)}
@@ -224,18 +213,6 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
             />
           )}
         </>
-      ) : reducedMotion ? (
-        <Image
-          className="sc-media"
-          src={withAttempt(preview.poster, posterAttempt)}
-          alt=""
-          fill
-          quality={78}
-          sizes="(max-width: 899px) 84vw, 640px"
-          aria-hidden="true"
-          style={{ objectPosition }}
-          onError={handlePosterError}
-        />
       ) : (
         <>
           {!loadedFrames[0] && (
