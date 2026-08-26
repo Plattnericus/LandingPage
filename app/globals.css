@@ -516,10 +516,6 @@ main {
   z-index: 0;
 }
 
-.sc-poster {
-  z-index: 1;
-}
-
 .sc-swap-layer {
   position: absolute;
   inset: 0;

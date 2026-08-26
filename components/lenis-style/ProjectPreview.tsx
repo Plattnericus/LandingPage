@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ProjectPreview as ProjectPreviewData } from "@/lib/projects";
@@ -31,18 +30,15 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
   const rootRef = useRef<HTMLSpanElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const wasSwapActiveRef = useRef(false);
-  const [loadMedia, setLoadMedia] = useState(false);
   const [isActive, setIsActive] = useState(false);
-  const [videoPlaying, setVideoPlaying] = useState(false);
   const [activeFrame, setActiveFrame] = useState<0 | 1>(0);
   const [replayKeys, setReplayKeys] = useState<[number, number]>([0, 0]);
   const [loadedFrames, setLoadedFrames] = useState<[boolean, boolean]>([false, false]);
 
   /* Retry bookkeeping for every media element this card can show. Bumping
      an attempt count re-requests the same asset through withAttempt, so a
-     blip self-heals instead of leaving the card stuck on a broken frame or
-     poster for good. */
-  const [posterAttempt, setPosterAttempt] = useState(0);
+     blip self-heals instead of leaving the card stuck on a broken frame
+     for good. */
   const [videoAttempt, setVideoAttempt] = useState(0);
   const [frameAttempts, setFrameAttempts] = useState<[number, number]>([0, 0]);
   const retryTimers = useRef<Record<string, number>>({});
@@ -57,11 +53,6 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
   const retry = (key: string, run: () => void) => {
     window.clearTimeout(retryTimers.current[key]);
     retryTimers.current[key] = window.setTimeout(run, RETRY_BACKOFF_MS);
-  };
-
-  const handlePosterError = () => {
-    if (posterAttempt >= RETRY_LIMIT) return;
-    retry("poster", () => setPosterAttempt((attempt) => attempt + 1));
   };
 
   const handleVideoError = () => {
@@ -80,40 +71,28 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     );
   };
 
+  /* Media itself is requested straight away on mount (no lazy/intersection
+     gate) — with only six cards total the eager bandwidth cost is small,
+     and it means every card already has its clip decoded well before a
+     visitor scrolls to it instead of racing the network once it's on
+     screen. isActive is the one thing still intersection-driven: it just
+     pauses playback for off-screen cards to save CPU/battery. */
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
     if (!("IntersectionObserver" in window)) {
-      /* deferred a frame so setState stays out of the effect body itself */
-      const raf = requestAnimationFrame(() => {
-        setLoadMedia(true);
-        setIsActive(true);
-      });
+      const raf = requestAnimationFrame(() => setIsActive(true));
       return () => cancelAnimationFrame(raf);
     }
 
-    const loadObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setLoadMedia(true);
-          loadObserver.disconnect();
-        }
-      },
-      { rootMargin: "0px 640px", threshold: 0.01 },
-    );
     const activityObserver = new IntersectionObserver(
       (entries) => setIsActive(entries.some((entry) => entry.isIntersecting)),
       { threshold: 0.08 },
     );
-
-    loadObserver.observe(root);
     activityObserver.observe(root);
 
-    return () => {
-      loadObserver.disconnect();
-      activityObserver.disconnect();
-    };
+    return () => activityObserver.disconnect();
   }, []);
 
   useEffect(() => {
@@ -127,7 +106,8 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     }
 
     void video.play().catch(() => {
-      /* The muted poster stays visible if a browser blocks autoplay. */
+      /* A browser that blocks autoplay just leaves the card on its last
+         decoded frame — there's no poster to fall back to anymore. */
     });
   }, [isActive, preview.kind]);
 
@@ -184,50 +164,21 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
       data-active-frame={preview.kind === "swap" ? activeFrame + 1 : undefined}
     >
       {preview.kind === "video" ? (
-        <>
-          <video
-            className="sc-media sc-video"
-            ref={videoRef}
-            src={loadMedia ? withAttempt(preview.src, videoAttempt) : undefined}
-            muted
-            loop
-            playsInline
-            autoPlay
-            preload="none"
-            aria-hidden="true"
-            style={{ objectPosition }}
-            onPlaying={() => setVideoPlaying(true)}
-            onError={handleVideoError}
-          />
-          {!videoPlaying && (
-            <Image
-              className="sc-media sc-poster"
-              src={withAttempt(preview.poster, posterAttempt)}
-              alt=""
-              fill
-              quality={78}
-              sizes="(max-width: 899px) 84vw, 640px"
-              aria-hidden="true"
-              style={{ objectPosition }}
-              onError={handlePosterError}
-            />
-          )}
-        </>
+        <video
+          className="sc-media sc-video"
+          ref={videoRef}
+          src={withAttempt(preview.src, videoAttempt)}
+          muted
+          loop
+          playsInline
+          autoPlay
+          preload="auto"
+          aria-hidden="true"
+          style={{ objectPosition }}
+          onError={handleVideoError}
+        />
       ) : (
         <>
-          {!loadedFrames[0] && (
-            <Image
-              className="sc-media sc-poster"
-              src={withAttempt(preview.poster, posterAttempt)}
-              alt=""
-              fill
-              quality={78}
-              sizes="(max-width: 899px) 84vw, 640px"
-              aria-hidden="true"
-              style={{ objectPosition }}
-              onError={handlePosterError}
-            />
-          )}
           {preview.sources.map((src, index) => (
             <span
               className="sc-swap-layer"
@@ -239,9 +190,9 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
               <img
                 key={`${src}-${replayKeys[index]}-${frameAttempts[index]}`}
                 className="sc-media"
-                src={loadMedia ? withAttempt(src, frameAttempts[index]) : undefined}
+                src={withAttempt(src, frameAttempts[index])}
                 alt=""
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 aria-hidden="true"
                 style={{ objectPosition }}
