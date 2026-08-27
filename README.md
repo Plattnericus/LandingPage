@@ -1,9 +1,27 @@
 # plattnericus.dev
 
+**Live at [plattnericus.dev](https://plattnericus.dev)**
+
 Personal portfolio site for Nexor / Plattnericus — a fullstack developer from
 South Tyrol. Single-page, scroll-driven site built on Next.js, with a GSAP +
 Lenis animation layer and a React Three Fiber scene running behind the
 content.
+
+## Highlights
+
+- One continuous scroll timeline: Lenis drives native scroll, GSAP's
+  `ScrollTrigger` drives every reveal, and the R3F scene reads the same
+  scroll position independently — nothing is keyframed against a clock.
+- The 3D scene (a chrome arm/hand, a warp-tunnel starfield) re-measures
+  section bounds every frame instead of caching them, so it can't drift out
+  of sync after a layout shift or a resize.
+- Fully usable with `prefers-reduced-motion` on: the canvas never mounts,
+  every GSAP timeline is skipped at the source via `gsap.matchMedia`, and a
+  one-time notice (auto-localized to the visitor's own language, no manual
+  switcher) explains why the page looks static instead of just leaving it
+  unexplained.
+- Structured data, `llms.txt`/`llms-full.txt`, and `robots.ts` are tuned for
+  both traditional search and the current wave of AI answer-engine crawlers.
 
 ## Stack
 
