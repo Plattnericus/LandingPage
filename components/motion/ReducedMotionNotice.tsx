@@ -62,7 +62,7 @@ export default function ReducedMotionNotice() {
       <p>
         This device has reduced motion turned on, so this page is showing its calm, static
         version on purpose — no 3D scene, mascot, or scroll animation. If that wasn&apos;t
-        intentional, you can turn it back on in {INSTRUCTIONS[os]}.
+        intentional, flip it back on in {INSTRUCTIONS[os]}, then reload this page to see it.
       </p>
       <button type="button" className="motion-notice-close" onClick={dismiss} aria-label="Dismiss this notice">
         <X aria-hidden="true" />
