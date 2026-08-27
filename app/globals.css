@@ -261,7 +261,14 @@ main {
 }
 
 .hero-wordmark .nexor-type-glyph {
-  font-size: clamp(8rem, 26vw, 31rem);
+  /* Each letter lives in its own flex-shrunk hw-mask (flex: 1 1 20%;
+     min-width: 0 — see below), so a floor that's too tall for the
+     available per-letter width gets clipped by that mask's overflow:
+     hidden instead of just refusing to shrink further. 8rem was that
+     floor; measured against the widest glyph (O) it was already wider
+     than its mask well before this ever reached a phone. 19vw keeps a
+     real margin at every width that's actually been measured. */
+  font-size: clamp(3rem, 19vw, 31rem);
   line-height: 0.72;
   text-align: center;
   transform: scaleX(1.04);
@@ -717,7 +724,13 @@ main {
      but by then it is a solid cream field flooding the frame, so it never reads
      as blur. rt-enter lives outside .rethink-zoom, so it never inherits that
      element's own 1→4x scale on top of its own. */
-  font-size: calc(3.07692vh * 18.2);
+  /* Same overflow guard as rt-first/rt-second: vh-only sizing is fine on
+     wide desktop viewports but balloons on narrow-tall ones, since this
+     is meant to read as one word, not a handful of oversized letters
+     cropped by rethink-inner. 36vw keeps the same ~2x-viewport "flies past
+     the frame" character this already has on desktop (measured, not
+     guessed) instead of letting it blow out to 5-7x on a phone. */
+  font-size: min(calc(3.07692vh * 18.2), 36vw);
   font-weight: 700;
   line-height: 0.9;
   text-align: center;
@@ -770,7 +783,8 @@ main {
   }
 
   .rt-enter {
-    font-size: calc(6.37255vh * 8.5);
+    /* same guard, same ceiling — see the base rule's comment */
+    font-size: min(calc(6.37255vh * 8.5), 36vw);
   }
 }
 
