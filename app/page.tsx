@@ -2,6 +2,7 @@ import ClawdPet from "@/components/clawd/ClawdPet";
 import GLCanvas from "@/components/gl/GLCanvas";
 import IntroLoader from "@/components/loader/IntroLoader";
 import CursorGlow from "@/components/motion/CursorGlow";
+import ReducedMotionNotice from "@/components/motion/ReducedMotionNotice";
 import Footer from "@/components/lenis-style/Footer";
 import Heat from "@/components/lenis-style/Heat";
 import Hero from "@/components/lenis-style/Hero";
@@ -182,6 +183,7 @@ export default function Home() {
         <CursorGlow />
         <GLCanvas />
         <ClawdPet />
+        <ReducedMotionNotice />
         <main>
           <Hero />
           <Why />
