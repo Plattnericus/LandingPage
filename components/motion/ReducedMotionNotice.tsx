@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { detectOS, type OS } from "./osDetect";
 import { COPY, RTL_LANGS, detectLang, type Lang } from "./reducedMotionCopy";
-
-/* Bump this if the copy changes enough that a visitor who dismissed the old
-   wording should see the new one once. */
-const DISMISS_KEY = "motion-notice-dismissed-v1";
 
 type Shown = { os: OS; lang: Lang };
 
@@ -16,37 +12,53 @@ type Shown = { os: OS; lang: Lang };
     themselves for exactly that preference. That's the right default for
     someone who set it for real accessibility reasons, but plenty of people
     have it on by accident (an OS default, a battery-saver toggle) and have
-    no idea it's why a site looks "broken." This is a one-time, easily
-    dismissed explanation, not a nag — it never reappears once closed, and
-    it makes no judgment about which state is correct for the visitor.
+    no idea it's why a site looks "broken."
 
-    The language is read straight from the browser on every visit, same as
-    prefers-reduced-motion itself — there's deliberately no switcher and
-    nothing persisted for it, only the dismissal is remembered. */
+    Deliberately not persisted anywhere: it checks fresh on every page open,
+    same as prefers-reduced-motion itself, so it reflects whatever's true
+    right now rather than a stale "dismissed once" flag from a visit before
+    the visitor actually changed the setting. Dismissing it only silences it
+    for the rest of this page view (dismissedRef, not storage) — not a nag,
+    but not a stale one either.
+
+    If the media query changes live mid-visit, this reloads rather than
+    just hiding the notice in place. The GL canvas mounting, every GSAP
+    ScrollTrigger timeline, and Lenis are all gated on this same query but
+    only ever evaluated once at load — there's no live path for any of them
+    to come alive on their own. The visitor just followed this notice's own
+    instructions, so a reload is what actually delivers on "flip it back on
+    and see it" instead of quietly hiding the message while leaving the
+    whole animated layer frozen in whatever it mounted as.
+
+    The language is read straight from the browser, same as the motion
+    preference — there's deliberately no switcher for it. */
 export default function ReducedMotionNotice() {
   const [shown, setShown] = useState<Shown | null>(null);
+  const dismissedRef = useRef(false);
 
   useEffect(() => {
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    try {
-      if (window.localStorage.getItem(DISMISS_KEY) === "1") return;
-    } catch {
-      /* private browsing etc. — fall through and show it anyway */
-    }
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+
     /* deferred a frame so setState stays out of the effect body itself */
-    const raf = requestAnimationFrame(() => setShown({ os: detectOS(), lang: detectLang() }));
-    return () => cancelAnimationFrame(raf);
+    const raf = requestAnimationFrame(() => {
+      if (mq.matches && !dismissedRef.current) {
+        setShown({ os: detectOS(), lang: detectLang() });
+      }
+    });
+    const onChange = () => window.location.reload();
+    mq.addEventListener("change", onChange);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      mq.removeEventListener("change", onChange);
+    };
   }, []);
 
   if (!shown) return null;
 
   const dismiss = () => {
+    dismissedRef.current = true;
     setShown(null);
-    try {
-      window.localStorage.setItem(DISMISS_KEY, "1");
-    } catch {
-      /* nothing to persist to — it just shows again next visit */
-    }
   };
 
   const copy = COPY[shown.lang];
