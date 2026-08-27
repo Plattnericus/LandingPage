@@ -41,7 +41,7 @@ export default function Why() {
               autoAlpha: 1,
               duration: 0.9,
               ease: EASE.soft,
-              scrollTrigger: { trigger: item, start: "top 94%" },
+              scrollTrigger: { trigger: item, start: "top 85%" },
             },
           );
         });
