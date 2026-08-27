@@ -116,6 +116,7 @@ const jsonLd = {
       url: siteConfig.url,
       name: siteConfig.title,
       description: siteConfig.description,
+      dateModified: buildDate,
       isPartOf: {
         "@id": `${siteConfig.url}#website`,
       },

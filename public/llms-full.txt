@@ -54,11 +54,15 @@ Technologies: React, JavaScript, desktop UI, motion
 
 ### Magic-Mirror
 
+Live URL: https://magicmirror.plattnericus.dev
+Repository: https://github.com/Plattnericus/Magic-Mirror
 Description: A wall-mounted smart display running on a Raspberry Pi: time, weather and daily information rendered as a calm always-on interface.
 Technologies: JavaScript, Node.js, Raspberry Pi, selfhosting
 
 ### Minesweeper
 
+Live URL: https://minesweeper.plattnericus.dev
+Repository: https://github.com/Plattnericus/Minesweeper
 Description: The classic logic game rebuilt from scratch: clean grid state, flood reveals, flagging and a focused minimal interface.
 Technologies: game logic, grid algorithms, UI
 
