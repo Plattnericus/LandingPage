@@ -35,16 +35,22 @@ type Progress = { value: number };
 const lightProgress: Progress = { value: 0 };
 const handProgress: Progress = { value: 0 };
 const earlyHandProgress: Progress = { value: 0 };
-/** 1 while the rethink zoom-through-the-T is still on screen. The hand keeps
-    its normal pose schedule underneath, but is rendered invisible for the whole
-    dive so it never intrudes on that transition; the gate only lifts once the
-    cream T has fully flooded the frame, so the hand is revealed behind the
-    flood and simply appears — already pointing up — as the Solution section
-    scrolls in. */
+/** 0 once the hand is fully faded in, 1 while it's fully hidden — a crossfade,
+    not a switch. Gating this on solutionProgress (as it used to be) can't
+    work: that value is already pinned at 1 for the whole stretch between the
+    rethink pin releasing and the Heat section arriving, while handProgress is
+    still climbing out of the mid-pose "offscreen pose swap" keyframe during
+    that same stretch — any solutionProgress threshold either reveals the arm
+    mid-swap (looks clipped, hanging half off the bottom edge) or never
+    reveals it early enough to matter. Keying the fade off handProgress itself
+    means it only ever appears once its own pose has actually arrived
+    somewhere presentable. */
 const handHidden: Progress = { value: 0 };
-/** Progress at which the flood is solid cream (matches Rethink's BG_FLIP_AT);
-    the hand's visibility gate lifts here, safely behind that cream. */
-const HAND_REVEAL_AT = 0.99;
+/** handProgress band the reveal fades across — chosen to sit just past the
+    "offscreen pose swap" keyframe (0.22-0.27) so the arm is never shown mid
+    pose-change, and well before it settles into POINT at 0.27. */
+const HAND_REVEAL_FROM = 0.26;
+const HAND_REVEAL_TO = 0.32;
 /** Signed, lightly smoothed px/frame scroll speed — positive while scrolling
     down. Drives the starfield's warp-tunnel travel and streak length. */
 const warpVelocity: Progress = { value: 0 };
@@ -117,10 +123,6 @@ function ScrollSync() {
     /* Match the exact late horizontal wipe used by the DOM takeover. */
     lightProgress.value = THREE.MathUtils.clamp((solutionProgress - 0.545) / 0.455, 0, 1);
 
-    /* Hide the hand for the entire rethink dive (solutionProgress tracks that
-       section), lifting only once the cream flood is solid — see handHidden. */
-    handHidden.value = solutionProgress < HAND_REVEAL_AT ? 1 : 0;
-
     /* Lenis uses one continuous light-scene hand path. The exact Heat pose
        lands at a fixed point in our rig, then the model completes almost two
        Y-axis turns between the Heat start and the page end. Splitting the
@@ -148,6 +150,15 @@ function ScrollSync() {
         heatToEnd,
       );
     }
+
+    /* Keyed off the pose progress itself — see the comment on handHidden. */
+    handHidden.value =
+      1 -
+      THREE.MathUtils.clamp(
+        (handProgress.value - HAND_REVEAL_FROM) / (HAND_REVEAL_TO - HAND_REVEAL_FROM),
+        0,
+        1,
+      );
   });
 
   return null;
@@ -488,6 +499,9 @@ const lateSilverHandMaterial = new THREE.MeshPhysicalMaterial({
   clearcoatRoughness: 0.08,
   envMapIntensity: 1.45,
   side: THREE.DoubleSide,
+  /* opacity is driven per-frame in HandRig for the reveal fade — this
+     material is exclusively its own, never shared with the early hand */
+  transparent: true,
 });
 
 function SilverChromeEnvironment() {
@@ -595,9 +609,11 @@ type EarlyHandFrame = [number, number, number, number, number, number, number];
    scale ratios: progress, x/W, y/H, rawScale/H, rotation XYZ. */
 const EARLY_HAND_KEYFRAMES: EarlyHandFrame[] = [
   [0, -0.1, -1.75, 0.045, 0, Math.PI / 2, 0],
-  [0.4, 0.15, -0.4, 0.02, -Math.PI / 4, -3 * Math.PI / 4, -Math.PI / 4],
-  [0.8, 0.15, -0.4, 0.02, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
-  [1, 0.68, -0.4, 0.018, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
+  /* arrives a bit sooner (was 0.4) and settles a touch lower (was -0.4) so
+     it's already in its resting reach by the time the first beat is read */
+  [0.3, 0.15, -0.46, 0.02, -Math.PI / 4, -3 * Math.PI / 4, -Math.PI / 4],
+  [0.8, 0.15, -0.46, 0.02, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
+  [1, 0.68, -0.46, 0.018, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
 ];
 
 const RAW_ARM_HEIGHT = 73.3446655;
@@ -697,7 +713,10 @@ function HandRig() {
     g.position.set(x + idle * 0.025, y + idle * 0.055, 0);
     g.rotation.set(rotX + idle * 0.012, rotY, rotZ - idle * 0.01);
     g.scale.setScalar(scale);
-    g.visible = p > 0.001 && handHidden.value < 0.5;
+
+    const reveal = 1 - handHidden.value;
+    lateSilverHandMaterial.opacity = reveal;
+    g.visible = p > 0.001 && reveal > 0.001;
   });
 
   return (

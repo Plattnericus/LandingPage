@@ -640,7 +640,7 @@ main {
   --rt-enter-opacity: 0;
   --rethink-text-fade: 1;
   position: relative;
-  height: 320vh;
+  height: 275vh;
   color: var(--light);
 }
 
@@ -749,7 +749,9 @@ main {
 
 @media (min-width: 900px) {
   .rethink {
-    height: 500vh;
+    /* was 500vh — a bit less scroll distance so the dive to ENTER NEXOR
+       reads faster without turning into a blur */
+    height: 430vh;
   }
 
   .rethink-inner {
