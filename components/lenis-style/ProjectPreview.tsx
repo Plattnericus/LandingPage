@@ -71,6 +71,15 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
     );
   };
 
+  const markFrameLoaded = (index: 0 | 1) => {
+    setLoadedFrames((frames) => {
+      if (frames[index]) return frames;
+      const next: [boolean, boolean] = [...frames];
+      next[index] = true;
+      return next;
+    });
+  };
+
   /* Media itself is requested straight away on mount (no lazy/intersection
      gate) — with only six cards total the eager bandwidth cost is small,
      and it means every card already has its clip decoded well before a
@@ -196,14 +205,15 @@ export default function ProjectPreview({ preview, name, eyebrow }: ProjectPrevie
                 decoding="async"
                 aria-hidden="true"
                 style={{ objectPosition }}
-                onLoad={() =>
-                  setLoadedFrames((frames) => {
-                    if (frames[index]) return frames;
-                    const next: [boolean, boolean] = [...frames];
-                    next[index] = true;
-                    return next;
-                  })
-                }
+                /* A cached GIF can finish loading before this handler is even
+                   attached (StrictMode's mount/unmount/remount pass leaves the
+                   browser cache warm for the real mount), so onLoad alone can
+                   miss it and leave loadedFrames stuck false forever — the ref
+                   catches that already-complete case on attach. */
+                ref={(el) => {
+                  if (el?.complete && el.naturalWidth > 0) markFrameLoaded(index as 0 | 1);
+                }}
+                onLoad={() => markFrameLoaded(index as 0 | 1)}
                 onError={() => handleFrameError(index as 0 | 1)}
               />
             </span>
