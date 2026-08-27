@@ -4,24 +4,18 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
-import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { CustomEase } from "gsap/CustomEase";
 import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
 import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
-import { TextPlugin } from "gsap/TextPlugin";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(
     useGSAP,
     ScrollTrigger,
     SplitText,
-    DrawSVGPlugin,
-    MotionPathPlugin,
     MorphSVGPlugin,
     CustomEase,
     ScrambleTextPlugin,
-    TextPlugin,
   );
 
   if (!CustomEase.get("apple")) {
