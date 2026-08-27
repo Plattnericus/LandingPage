@@ -2,26 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { detectOS, type OS } from "./osDetect";
+import { COPY, RTL_LANGS, detectLang, type Lang } from "./reducedMotionCopy";
 
 /* Bump this if the copy changes enough that a visitor who dismissed the old
    wording should see the new one once. */
 const DISMISS_KEY = "motion-notice-dismissed-v1";
 
-type OS = "windows" | "mac" | "other";
-
-function detectOS(): OS {
-  if (typeof navigator === "undefined") return "other";
-  const signal = `${navigator.platform} ${navigator.userAgent}`;
-  if (/mac/i.test(signal)) return "mac";
-  if (/win/i.test(signal)) return "windows";
-  return "other";
-}
-
-const INSTRUCTIONS: Record<OS, string> = {
-  windows: "Settings → Accessibility → Visual effects → Animation effects",
-  mac: "System Settings → Accessibility → Display → Reduce motion",
-  other: "your device's accessibility or display settings, under something like “reduce motion”",
-};
+type Shown = { os: OS; lang: Lang };
 
 /** A visitor with reduced motion enabled sees this site's calm, fully static
     page on purpose — see GLCanvas/ClawdPet/IntroLoader, which all skip
@@ -30,9 +18,13 @@ const INSTRUCTIONS: Record<OS, string> = {
     have it on by accident (an OS default, a battery-saver toggle) and have
     no idea it's why a site looks "broken." This is a one-time, easily
     dismissed explanation, not a nag — it never reappears once closed, and
-    it makes no judgment about which state is correct for the visitor. */
+    it makes no judgment about which state is correct for the visitor.
+
+    The language is read straight from the browser on every visit, same as
+    prefers-reduced-motion itself — there's deliberately no switcher and
+    nothing persisted for it, only the dismissal is remembered. */
 export default function ReducedMotionNotice() {
-  const [os, setOs] = useState<OS | null>(null);
+  const [shown, setShown] = useState<Shown | null>(null);
 
   useEffect(() => {
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -42,14 +34,14 @@ export default function ReducedMotionNotice() {
       /* private browsing etc. — fall through and show it anyway */
     }
     /* deferred a frame so setState stays out of the effect body itself */
-    const raf = requestAnimationFrame(() => setOs(detectOS()));
+    const raf = requestAnimationFrame(() => setShown({ os: detectOS(), lang: detectLang() }));
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  if (!os) return null;
+  if (!shown) return null;
 
   const dismiss = () => {
-    setOs(null);
+    setShown(null);
     try {
       window.localStorage.setItem(DISMISS_KEY, "1");
     } catch {
@@ -57,14 +49,13 @@ export default function ReducedMotionNotice() {
     }
   };
 
+  const copy = COPY[shown.lang];
+  const rtl = RTL_LANGS.has(shown.lang);
+
   return (
     <div className="motion-notice" role="status">
-      <p>
-        This device has reduced motion turned on, so this page is showing its calm, static
-        version on purpose — no 3D scene, mascot, or scroll animation. If that wasn&apos;t
-        intentional, flip it back on in {INSTRUCTIONS[os]}, then reload this page to see it.
-      </p>
-      <button type="button" className="motion-notice-close" onClick={dismiss} aria-label="Dismiss this notice">
+      <p dir={rtl ? "rtl" : undefined}>{copy.body(shown.os)}</p>
+      <button type="button" className="motion-notice-close" onClick={dismiss} aria-label={copy.dismiss}>
         <X aria-hidden="true" />
       </button>
     </div>
