@@ -1,86 +1,91 @@
 # plattnericus.dev
 
-> Build. Deploy. Secure.
-
-The cinematic landing page of **Nexor / Plattnericus** ([github.com/Plattnericus](https://github.com/Plattnericus)) —
-a fullstack developer from South Tyrol heading toward DevOps and cybersecurity.
-Designed like an Apple product page, animated like a GSAP showcase piece:
-one continuous scroll story with pinned scenes, liquid morphing shapes,
-code-rendered device mockups and live GitHub data. Not a template.
-
----
-
-## Experience
-
-| # | Scene | Signature motion |
-|---|-------|------------------|
-| 00 | Cinematic intro | Wordmark out of blur over a morphing liquid blob, ≤ 1.5 s |
-| 01 | Pinned hero | SplitText 3D char entrance, magnetic CTAs, mouse spotlight + depth, floating orbit elements, rotating halo, Build. → Deploy. → Secure. word story |
-| 02 | Statement | Blur-to-sharp headline, word-by-word text brighten on scrub |
-| 03 | Project orbit | Semicircular wheel on the left — five projects rotate through the apex with snap stepping, copy panels swap with SplitText, per-visual micro-motion on the active card |
-| 04 | POKYH case study | Pinned MacBook + iPhone, screens switch per story beat, infrastructure lines draw into a full system map with traveling pulses |
-| 05 | StreamDeck case study | macOS-style desktop in a browser frame: windows spring open, dock icons pop, terminal types live, everything reacts to the mouse |
-| 06 | DevOps lab | GitHub → CI/CD → Docker → VPS → Reverse Proxy → Cloudflare → Live App: DrawSVG pipeline, MotionPath packets, glowing hand-off |
-| 07 | Cybersecurity | Radar sweep, blips, a checklist that ticks itself while you scroll |
-| 08 | Tech stack | Staggered category rows with differential scroll drift |
-| 09 | Future vision | Pinned giant-word story: Fullstack → Infrastructure → Automation → Security |
-| 10 | Contact | Live GitHub stats counting up, breathing primary CTA, liquid accent |
-
-Extras: a **living browser tab** (canvas favicon with scroll progress ring —
-glyph and page title change per section, dim + notification dot when the tab
-is hidden, ring spin on return) and a fully animated **404 page** in the same
-design language.
+Personal portfolio site for Nexor / Plattnericus — a fullstack developer from
+South Tyrol. Single-page, scroll-driven site built on Next.js, with a GSAP +
+Lenis animation layer and a React Three Fiber scene running behind the
+content.
 
 ## Stack
 
-- **Next.js 16** — App Router, React 19, TypeScript strict
-- **GSAP 3.15** — ScrollTrigger, SplitText, DrawSVG, MotionPath, **MorphSVG** (liquid blobs), CustomEase, ScrambleText, TextPlugin via `@gsap/react`
-- **Lenis** — smooth scroll driven by the GSAP ticker
-- **Tailwind CSS v4** + a hand-built design system: warm coffee/almond palette, Apple system font stack (`-apple-system, "SF Pro Display", …`)
-- **lucide-react** — every icon is an SVG, zero emojis
+- **Next.js 16** (App Router) · **React 19** · **TypeScript** (strict)
+- **Tailwind CSS v4**
+- **GSAP 3** + `@gsap/react` + ScrollTrigger, **Lenis** for smooth scroll
+- **Three.js** via **React Three Fiber** (`@react-three/fiber`, `@react-three/drei`) for the 3D scene
 
-All device mockups (MacBook, iPhone, browser, smart mirror, minesweeper
-board, trajectory scene, system map, pipeline, radar) are **code-rendered
-CSS/SVG** — no bitmap screenshots anywhere.
-
-## Live GitHub data
-
-`lib/github.ts` fetches `api.github.com/users/Plattnericus/repos` on the
-server (ISR, revalidated hourly) and feeds the orbit panels, the StreamDeck
-case study and the contact stats strip. Projects without a public repository
-simply show no numbers — stats are never invented. The same payload is
-exposed at `/api/github`.
-
-```bash
-# .env — optional token to avoid rate limits
-GITHUB-TOKEN=ghp_...        # GITHUB_TOKEN / GH_TOKEN also work
-```
-
-## Development
+## Getting started
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
-npm run check    # typecheck + eslint + production build
+npm run dev        # http://localhost:3000
 ```
+
+Other scripts:
+
+```bash
+npm run typecheck  # tsc --noEmit
+npm run lint       # eslint .
+npm run build      # production build
+npm run check      # typecheck + lint + build, in that order
+```
+
+## Environment variables
+
+None are required to run the site locally. `.env.example` lists the optional
+ones:
+
+| Variable | Purpose |
+|---|---|
+| `GITHUB-TOKEN` | Raises the GitHub API rate limit for `/api/github` (also reads `GITHUB_TOKEN` or `GH_TOKEN` if set instead). Falls back to unauthenticated requests without it. |
+| `GOOGLE_SITE_VERIFICATION` | Fills the Google Search Console verification meta tag in `app/layout.tsx`. |
+
+`NEXT_PUBLIC_SITE_URL` is also read (in `lib/site.ts`) if you need to point
+canonical URLs, the sitemap, and JSON-LD at something other than
+`https://plattnericus.dev` — useful for preview deployments.
 
 ## Project structure
 
 ```
-app/                  routes, SEO surface (robots, sitemap, OG images, /ai), 404
+app/
+  page.tsx            section order for the homepage, JSON-LD graph
+  layout.tsx           fonts, global metadata
+  robots.ts, sitemap.ts   SEO surface
+  ai/                   a plain-text-friendly page for LLM crawlers
+  api/github/           live GitHub repo stats (JSON)
+  *-image.tsx, icon.tsx   generated OG/favicon images
+
 components/
-  providers/          Lenis + ScrollTrigger orchestration
-  motion/             MagneticButton, AnimatedHeadline, LiquidBlob,
-                      DynamicFavicon, ScrollProgress, AmbientBackground, useDepth
-  sections/           one component per scene
-  mockups/            code-rendered devices & diagrams
-lib/                  animation setup, GitHub client, content, project data
+  lenis-style/          the actual page sections (Hero, Why, Showcase, Rethink, Solution, Heat, Footer)
+  gl/                    the React Three Fiber canvas + scroll-synced 3D scene
+  loader/                intro loader that gates the reveal animations
+  providers/             Lenis + ScrollTrigger wiring, the dynamic favicon
+  motion/                shared motion primitives (cursor glow, reduced-motion notice, the 404 page's blob/magnetic-button)
+  clawd/                  the desktop mascot
+  brand/                  the wordmark
+
+lib/
+  animation.ts           shared GSAP/ScrollTrigger setup + easing
+  projects.ts             project data shown in Showcase
+  site.ts                  site identity/config used across metadata
+  github.ts                GitHub API client backing /api/github
+  clawd.ts, palette.ts     mascot copy, color tokens
 ```
 
-## Accessibility & performance
+## The animation system, briefly
 
-`prefers-reduced-motion` renders a fully static, complete page (pins,
-loops, liquid and intro are simply gone). Mobile swaps pinned/orbital scenes
-for vertical stacks. Infinite animations are gated to the viewport and pause
-in hidden tabs; blur effects are budgeted; scrubbed timelines restore their
-exact resting state when you scroll back up.
+Scroll position drives almost everything. `SmoothScrollProvider` wires Lenis
+into the GSAP ticker so native scroll and GSAP's `ScrollTrigger` stay in
+sync. Each section in `components/lenis-style/` owns its own
+`ScrollTrigger`-based timeline, scoped with `useGSAP`. The 3D scene in
+`components/gl/GLCanvas.tsx` runs independently on the same scroll position —
+it re-measures section bounds every frame rather than relying on React state,
+so it can't drift out of sync with a pinned spacer after a layout shift.
+
+Everything animated is gated behind `prefers-reduced-motion`. When it's set,
+the 3D canvas never mounts, GSAP timelines are skipped via `gsap.matchMedia`,
+and `ReducedMotionNotice` shows a one-time, dismissible explanation of why
+the page looks static instead of silently rendering a degraded version with
+no context.
+
+## Deployment
+
+Deployed on Vercel, auto-deploying from `main`.
