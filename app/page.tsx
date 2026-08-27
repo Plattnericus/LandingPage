@@ -1,5 +1,5 @@
 import ClawdPet from "@/components/clawd/ClawdPet";
-import GLCanvas from "@/components/gl/GLCanvas";
+import GLCanvas from "@/components/gl/GLCanvasLazy";
 import IntroLoader from "@/components/loader/IntroLoader";
 import CursorGlow from "@/components/motion/CursorGlow";
 import ReducedMotionNotice from "@/components/motion/ReducedMotionNotice";
