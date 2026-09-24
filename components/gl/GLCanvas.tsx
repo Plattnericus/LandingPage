@@ -1,33 +1,20 @@
 "use client";
 
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { PerformanceMonitor, useGLTF } from "@react-three/drei";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { PALETTE } from "@/lib/palette";
-
-/* react-three-fiber v9 constructs a THREE.Clock internally on every Canvas
-   mount, and three r183+ prints a one-off deprecation notice from Clock's
-   constructor (the switch to THREE.Timer only landed in r3f v10, still alpha).
-   We can't stop r3f from creating that Clock, so we route three's own console
-   output through its official hook and drop just that single line — every other
-   three log/warn/error is forwarded untouched and the global console is never
-   patched. Remove once react-three-fiber v10 is stable. */
-if (typeof THREE.setConsoleFunction === "function") {
-  THREE.setConsoleFunction((type, message, ...params) => {
-    if (
-      typeof message === "string" &&
-      message.includes("Clock: This module has been deprecated")
-    ) {
-      return;
-    }
-    const sink =
-      type === "warn" ? console.warn : type === "error" ? console.error : console.log;
-    sink(message, ...params);
-  });
-}
+import { RETHINK_COVER_AT } from "@/lib/rethink";
+import {
+  ARM_MODEL_URL,
+  NORMALIZED_ARM_HEIGHT,
+  RAW_ARM_HEIGHT,
+  orangeHandMaterial,
+  useChromeArm,
+} from "./arm";
+import { GLErrorBoundary, detectWebGL2Support } from "./safety";
 
 type Progress = { value: number };
 
@@ -35,27 +22,27 @@ type Progress = { value: number };
 const lightProgress: Progress = { value: 0 };
 const handProgress: Progress = { value: 0 };
 const earlyHandProgress: Progress = { value: 0 };
-/** 0 once the hand is fully faded in, 1 while it's fully hidden — a crossfade,
-    not a switch. Gating this on solutionProgress (as it used to be) can't
-    work: that value is already pinned at 1 for the whole stretch between the
-    rethink pin releasing and the Heat section arriving, while handProgress is
-    still climbing out of the mid-pose "offscreen pose swap" keyframe during
-    that same stretch — any solutionProgress threshold either reveals the arm
-    mid-swap (looks clipped, hanging half off the bottom edge) or never
-    reveals it early enough to matter. Keying the fade off handProgress itself
-    means it only ever appears once its own pose has actually arrived
-    somewhere presentable. */
-const handHidden: Progress = { value: 0 };
-/** handProgress band the reveal fades across — chosen to sit just past the
-    "offscreen pose swap" keyframe (0.22-0.27) so the arm is never shown mid
-    pose-change, and well before it settles into POINT at 0.27. */
-const HAND_REVEAL_FROM = 0.26;
-const HAND_REVEAL_TO = 0.32;
+/** 1 while the rethink zoom-through-the-T is still on screen, 0 from the
+    moment the cream flood is solid (the same threshold Rethink's BG_FLIP_AT
+    uses to take the flood away). The silver hand is only ever shown past that
+    point, and its path starts fully below the frame there, so it rises in from
+    the bottom edge in one piece — never faded (a transparent chrome mesh shows
+    its own inside geometry) and never sliced by the cream DOM layer above the
+    canvas. */
+const handHidden: Progress = { value: 1 };
+const HAND_REVEAL_AT = RETHINK_COVER_AT;
+/** Scroll, in viewport heights after the reveal, over which the hand rises
+    from below the frame into its POINT pose. It starts on the still-pinned
+    empty cream frame and settles as the Solution copy arrives. */
+const HAND_RISE_VH = 1.05;
+/** handProgress of the POINT keyframe the rise ends on (see HAND_KEYFRAMES). */
+const HAND_POINT_AT = 0.13;
+/** 0 → 1 over the first stretch of scroll after the cream flip — fades the
+    light-scene particles in instead of popping them on with the flip. */
+const lightReveal: Progress = { value: 0 };
 /** Signed, lightly smoothed px/frame scroll speed — positive while scrolling
     down. Drives the starfield's warp-tunnel travel and streak length. */
 const warpVelocity: Progress = { value: 0 };
-
-const ARM_MODEL_URL = "/models/arm/arm.glb";
 
 /* Skip the eager preload under reduced motion — the Canvas below never
    mounts in that mode, so nothing would ever use this GLB. Read directly at
@@ -67,77 +54,139 @@ if (typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion
 }
 
 /* ------------------------------------------------------------------ */
-/* Scroll sync — measured straight from the DOM every frame, so pin    */
-/* spacers and refreshes can never knock the ranges out of alignment   */
+/* Scroll sync — section offsets are measured whenever the layout      */
+/* changes (resize, fonts, pin sizing), never per frame: a per-frame   */
+/* getBoundingClientRect came right after GSAP's style writes and      */
+/* forced a synchronous layout on every scroll frame                   */
 /* ------------------------------------------------------------------ */
 
+type PageMetrics = {
+  whyTop: number;
+  whyHeight: number;
+  rethinkTop: number;
+  rethinkHeight: number;
+  heatTop: number;
+  docEnd: number;
+  viewportHeight: number;
+};
+
+function measurePage(): PageMetrics | null {
+  const why = document.querySelector<HTMLElement>(".why");
+  const rethink = document.querySelector<HTMLElement>(".rethink");
+  const heat = document.querySelector<HTMLElement>(".heat");
+  if (!why || !rethink || !heat) return null;
+  const scrollY = window.scrollY;
+  const whyBounds = why.getBoundingClientRect();
+  const rethinkBounds = rethink.getBoundingClientRect();
+  return {
+    whyTop: whyBounds.top + scrollY,
+    whyHeight: whyBounds.height,
+    rethinkTop: rethinkBounds.top + scrollY,
+    rethinkHeight: rethinkBounds.height,
+    heatTop: heat.getBoundingClientRect().top + scrollY,
+    docEnd: document.documentElement.scrollHeight - window.innerHeight,
+    viewportHeight: window.innerHeight,
+  };
+}
+
 function ScrollSync() {
-  const hero = useRef<HTMLElement | null>(null);
-  const why = useRef<HTMLElement | null>(null);
-  const rethink = useRef<HTMLElement | null>(null);
-  const heat = useRef<HTMLElement | null>(null);
+  const metrics = useRef<PageMetrics | null>(null);
   const lastScrollY = useRef<number | null>(null);
+
+  useEffect(() => {
+    let frame = 0;
+    const remeasure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        metrics.current = measurePage();
+      });
+    };
+    remeasure();
+    /* every section's size (and so every offset below it) plus the page
+       height — the showcase sizes itself in JS, Heat by viewport units */
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(document.body);
+    document.querySelectorAll("main > *").forEach((el) => observer.observe(el));
+    window.addEventListener("resize", remeasure);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", remeasure);
+    };
+  }, []);
 
   useFrame(() => {
     const scrollY = window.scrollY;
 
-    /* tracked unconditionally (not gated on the .rethink lookup below) so
-       the starfield keeps reacting to scroll speed even before that node
-       resolves */
+    /* tracked unconditionally (not gated on the metrics below) so the
+       starfield keeps reacting to scroll speed even before they exist */
     if (lastScrollY.current === null) lastScrollY.current = scrollY;
     const delta = scrollY - lastScrollY.current;
     lastScrollY.current = scrollY;
     warpVelocity.value = THREE.MathUtils.lerp(warpVelocity.value, delta, 0.18);
 
-    if (!hero.current) hero.current = document.querySelector<HTMLElement>(".hero");
-    if (!why.current) why.current = document.querySelector<HTMLElement>(".why");
-    if (hero.current && why.current) {
-      const whyBounds = why.current.getBoundingClientRect();
-      const whyTop = whyBounds.top + scrollY;
-      const earlyEnd = whyTop + whyBounds.height * 0.72;
-      earlyHandProgress.value = THREE.MathUtils.clamp(scrollY / Math.max(1, earlyEnd), 0, 1);
-    }
+    const m = metrics.current;
+    if (!m) return;
 
-    if (!rethink.current) {
-      rethink.current = document.querySelector<HTMLElement>(".rethink");
-      if (!rethink.current) return;
-    }
-    if (!heat.current) {
-      heat.current = document.querySelector<HTMLElement>(".heat");
-      if (!heat.current) return;
-    }
-    const bounds = rethink.current.getBoundingClientRect();
-    const heatBounds = heat.current.getBoundingClientRect();
-    const top = bounds.top + scrollY;
-    const heatTop = heatBounds.top + scrollY;
-    const viewportHeight = window.innerHeight;
-    const docEnd = document.documentElement.scrollHeight - window.innerHeight;
+    const earlyEnd = m.whyTop + m.whyHeight * 0.72;
+    earlyHandProgress.value = THREE.MathUtils.clamp(scrollY / Math.max(1, earlyEnd), 0, 1);
+
+    const top = m.rethinkTop;
+    const heatTop = m.heatTop;
+    const viewportHeight = m.viewportHeight;
+    const docEnd = m.docEnd;
     const solutionStart = top + viewportHeight * 0.05;
-    const solutionEnd = top + bounds.height - viewportHeight;
+    const solutionEnd = top + m.rethinkHeight - viewportHeight;
     const solutionProgress = THREE.MathUtils.clamp(
       (scrollY - solutionStart) / Math.max(1, solutionEnd - solutionStart),
       0,
       1,
     );
 
-    /* Match the exact late horizontal wipe used by the DOM takeover. */
-    lightProgress.value = THREE.MathUtils.clamp((solutionProgress - 0.545) / 0.455, 0, 1);
+    /* The dark scene fades out over the second half of the dive, finishing
+       exactly when the cream T covers the frame. */
+    lightProgress.value = THREE.MathUtils.clamp(
+      (solutionProgress / RETHINK_COVER_AT - 0.545) / 0.455,
+      0,
+      1,
+    );
 
-    /* Lenis uses one continuous light-scene hand path. The exact Heat pose
-       lands at a fixed point in our rig, then the model completes almost two
-       Y-axis turns between the Heat start and the page end. Splitting the
-       normalization here keeps that pose stable even when other sections
-       change height. */
-    const handStart = solutionStart + (solutionEnd - solutionStart) * 0.45;
+    /* Hidden for the whole dive, released the moment the flood is solid. */
+    handHidden.value = solutionProgress < HAND_REVEAL_AT ? 1 : 0;
+
+    /* Lenis uses one continuous light-scene hand path. It starts at the
+       reveal itself — fully below the frame — and rises in as the Solution
+       copy arrives. The exact Heat pose lands at a fixed point in our rig,
+       then the model completes almost two Y-axis turns between the Heat start
+       and the page end. Splitting the normalization here keeps that pose
+       stable even when other sections change height. */
+    const revealY = solutionStart + (solutionEnd - solutionStart) * HAND_REVEAL_AT;
     const heatKeyframe = 0.42;
+    lightReveal.value = THREE.MathUtils.clamp(
+      (scrollY - revealY) / (viewportHeight * 0.6),
+      0,
+      1,
+    );
 
-    if (scrollY < heatTop) {
-      const leadIn = THREE.MathUtils.clamp(
-        (scrollY - handStart) / Math.max(1, heatTop - handStart),
+    /* Two stretches: a long, unhurried rise into POINT, then the remaining
+       choreography up to the exact Heat pose. The rise never takes more than
+       60% of the way to Heat, so the later turns keep room on short pages. */
+    const riseEnd =
+      revealY + Math.min(viewportHeight * HAND_RISE_VH, (heatTop - revealY) * 0.6);
+    if (scrollY < riseEnd) {
+      const rise = THREE.MathUtils.clamp(
+        (scrollY - revealY) / Math.max(1, riseEnd - revealY),
         0,
         1,
       );
-      handProgress.value = leadIn * heatKeyframe;
+      handProgress.value = rise * HAND_POINT_AT;
+    } else if (scrollY < heatTop) {
+      const toHeat = THREE.MathUtils.clamp(
+        (scrollY - riseEnd) / Math.max(1, heatTop - riseEnd),
+        0,
+        1,
+      );
+      handProgress.value = THREE.MathUtils.lerp(HAND_POINT_AT, heatKeyframe, toHeat);
     } else {
       const heatToEnd = THREE.MathUtils.clamp(
         (scrollY - heatTop) / Math.max(1, docEnd - heatTop),
@@ -150,15 +199,6 @@ function ScrollSync() {
         heatToEnd,
       );
     }
-
-    /* Keyed off the pose progress itself — see the comment on handHidden. */
-    handHidden.value =
-      1 -
-      THREE.MathUtils.clamp(
-        (handProgress.value - HAND_REVEAL_FROM) / (HAND_REVEAL_TO - HAND_REVEAL_FROM),
-        0,
-        1,
-      );
   });
 
   return null;
@@ -176,7 +216,10 @@ function ScrollSync() {
 /* fades out with the dark→light flip exactly as before.                */
 /* ------------------------------------------------------------------ */
 
+/* Phones get a sparser field: the per-star update runs on the CPU every frame,
+   and at phone sizes 700 stars read just as dense as 1,600 do on a desktop. */
 const STAR_COUNT = 1600;
+const STAR_COUNT_COMPACT = 700;
 const FIELD_RADIUS = 15;
 const FAR_Z = -22;
 const NEAR_Z = -1;
@@ -264,12 +307,12 @@ type SimState = {
   seed: Float32Array;
 };
 
-function buildSimState(): SimState {
-  const sx = new Float32Array(STAR_COUNT);
-  const sy = new Float32Array(STAR_COUNT);
-  const sz = new Float32Array(STAR_COUNT);
-  const seed = new Float32Array(STAR_COUNT);
-  for (let i = 0; i < STAR_COUNT; i++) spawnStar(i, sx, sy, sz, seed);
+function buildSimState(count: number): SimState {
+  const sx = new Float32Array(count);
+  const sy = new Float32Array(count);
+  const sz = new Float32Array(count);
+  const seed = new Float32Array(count);
+  for (let i = 0; i < count; i++) spawnStar(i, sx, sy, sz, seed);
   return { sx, sy, sz, seed };
 }
 
@@ -280,16 +323,25 @@ function buildSimState(): SimState {
     in a ref that's only ever touched inside useFrame, never during render —
     reading `.current` during render (even to seed JSX) is exactly what trips
     the React Compiler's "no ref access during render" check. */
-function Starfield() {
+function Starfield({ count }: { count: number }) {
   const group = useRef<THREE.Group>(null);
   const dotsGeo = useRef<THREE.BufferGeometry>(null);
   const dotsMaterial = useRef<THREE.PointsMaterial>(null);
   const linesGeo = useRef<THREE.BufferGeometry>(null);
   const lineMaterial = useRef<THREE.LineBasicMaterial>(null);
   const sim = useRef<SimState | null>(null);
+  const buffers = useMemo(
+    () => ({
+      dotPositions: new Float32Array(count * 3),
+      dotColors: new Float32Array(count * 3),
+      linePositions: new Float32Array(count * 2 * 3),
+      lineColors: new Float32Array(count * 2 * 3),
+    }),
+    [count],
+  );
 
   useFrame(({ clock }) => {
-    if (!sim.current) sim.current = buildSimState();
+    if (!sim.current || sim.current.sx.length !== count) sim.current = buildSimState(count);
     const { sx, sy, sz, seed } = sim.current;
 
     const dotsAttr = dotsGeo.current?.attributes.position as THREE.BufferAttribute | undefined;
@@ -302,7 +354,11 @@ function Starfield() {
     const travel = THREE.MathUtils.clamp(IDLE_DRIFT + warp * WARP_TO_Z, -MAX_TRAVEL, MAX_TRAVEL);
     const streakLen = THREE.MathUtils.clamp(warp * STREAK_TO_LEN, -MAX_STREAK, MAX_STREAK);
     const speedGlow = THREE.MathUtils.clamp(Math.abs(warp) / 55, 0, 1);
-    const dark = 1 - lightProgress.value;
+    /* Past the cream flip the field is invisible — skip the whole per-star
+       update instead of simulating stars nobody can see. */
+    const dark = handHidden.value > 0.5 ? 1 - lightProgress.value : 0;
+    if (group.current) group.current.visible = dark > 0.001;
+    if (dark <= 0.001) return;
 
     const frame: StarState = {
       sx,
@@ -315,7 +371,7 @@ function Starfield() {
       lineColors: linesColorAttr.array as Float32Array,
     };
 
-    for (let i = 0; i < STAR_COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const z = sz[i] + travel;
       if (z > NEAR_Z) {
         spawnStar(i, sx, sy, sz, seed, z - SPAN);
@@ -343,8 +399,8 @@ function Starfield() {
     <group ref={group}>
       <points>
         <bufferGeometry ref={dotsGeo}>
-          <bufferAttribute attach="attributes-position" args={[new Float32Array(STAR_COUNT * 3), 3]} />
-          <bufferAttribute attach="attributes-color" args={[new Float32Array(STAR_COUNT * 3), 3]} />
+          <bufferAttribute attach="attributes-position" args={[buffers.dotPositions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[buffers.dotColors, 3]} />
         </bufferGeometry>
         <pointsMaterial
           ref={dotsMaterial}
@@ -360,9 +416,9 @@ function Starfield() {
         <bufferGeometry ref={linesGeo}>
           <bufferAttribute
             attach="attributes-position"
-            args={[new Float32Array(STAR_COUNT * 2 * 3), 3]}
+            args={[buffers.linePositions, 3]}
           />
-          <bufferAttribute attach="attributes-color" args={[new Float32Array(STAR_COUNT * 2 * 3), 3]} />
+          <bufferAttribute attach="attributes-color" args={[buffers.lineColors, 3]} />
         </bufferGeometry>
         <lineBasicMaterial
           ref={lineMaterial}
@@ -405,7 +461,7 @@ function LightParticles() {
 
   useFrame(({ clock }) => {
     if (material.current) {
-      material.current.opacity = lightProgress.value * 0.4;
+      material.current.opacity = lightReveal.value * 0.4;
     }
     if (group.current) {
       group.current.rotation.z = -clock.elapsedTime * 0.006;
@@ -434,58 +490,9 @@ function LightParticles() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Arm models — C4D exports ship without materials and at ~70 units,   */
-/* so every mesh gets the shared chrome and the rig is Box3-normalized */
+/* Arm materials — the shared chrome/orange ones and the model sizing   */
+/* live in ./arm; the late silver one stays here with its environment   */
 /* ------------------------------------------------------------------ */
-
-const chromeMaterial = new THREE.MeshStandardMaterial({
-  color: "#efefef",
-  metalness: 0.6,
-  roughness: 0.4,
-  side: THREE.DoubleSide,
-});
-
-const orangeHandMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    uAccent: { value: new THREE.Color(PALETTE.accent) },
-    uLightDirection: { value: new THREE.Vector3(-4, 3, 1).normalize() },
-  },
-  vertexShader: `
-    varying vec3 vWorldNormal;
-    varying vec3 vWorldPosition;
-
-    void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
-      vWorldNormal = normalize(mat3(modelMatrix) * normal);
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
-    }
-  `,
-  fragmentShader: `
-    uniform vec3 uAccent;
-    uniform vec3 uLightDirection;
-    varying vec3 vWorldNormal;
-    varying vec3 vWorldPosition;
-
-    void main() {
-      vec3 normal = normalize(vWorldNormal);
-      if (!gl_FrontFacing) normal *= -1.0;
-      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
-      vec3 halfDirection = normalize(uLightDirection + viewDirection);
-
-      float diffuse = max(dot(normal, uLightDirection), 0.0);
-      float specular = pow(max(dot(normal, halfDirection), 0.0), 30.0);
-      float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.3);
-      float light = 0.012 + diffuse * 0.045 + rim * 0.34 + specular * 0.9;
-
-      gl_FragColor = vec4(uAccent * light, 1.0);
-    }
-  `,
-  side: THREE.DoubleSide,
-  depthWrite: true,
-  transparent: false,
-  toneMapped: false,
-});
 
 /* The light section deliberately stays neutral silver. Only the early dark
    scene receives the orange Lenis-style lighting. */
@@ -499,9 +506,6 @@ const lateSilverHandMaterial = new THREE.MeshPhysicalMaterial({
   clearcoatRoughness: 0.08,
   envMapIntensity: 1.45,
   side: THREE.DoubleSide,
-  /* opacity is driven per-frame in HandRig for the reveal fade — this
-     material is exclusively its own, never shared with the early hand */
-  transparent: true,
 });
 
 function SilverChromeEnvironment() {
@@ -555,54 +559,6 @@ function SilverChromeEnvironment() {
   return null;
 }
 
-/** Center + scale factors so an object's longest axis spans `target` world units.
-    No reparenting here — mutating the cached GLTF graph inside useMemo breaks
-    under StrictMode double-invocation; transforms are applied via group props.
-    The measurement is cached per object so it always reflects the bind pose,
-    never a mid-animation state from an earlier mount. */
-const measureCache = new WeakMap<THREE.Object3D, { size: THREE.Vector3; center: THREE.Vector3 }>();
-
-function useNormalized(object: THREE.Object3D, target: number) {
-  return useMemo(() => {
-    let measured = measureCache.get(object);
-    if (!measured) {
-      const box = new THREE.Box3().setFromObject(object);
-      measured = { size: box.getSize(new THREE.Vector3()), center: box.getCenter(new THREE.Vector3()) };
-      measureCache.set(object, measured);
-    }
-    const { size, center } = measured;
-    const scale = target / Math.max(size.x, size.y, size.z);
-    return {
-      scale,
-      position: [-center.x * scale, -center.y * scale, -center.z * scale] as const,
-    };
-  }, [object, target]);
-}
-
-/** The arm GLBs ship without materials — every mesh gets the shared chrome.
-    The cached GLTF scene is cloned per mount: attaching the shared instance
-    directly breaks under StrictMode/HMR remounts (the unmounting tree detaches
-    it from its new parent). */
-function useChromeArm(
-  url: string,
-  targetHeight: number,
-  material: THREE.Material = chromeMaterial,
-) {
-  const { scene } = useGLTF(url);
-  const cloned = useMemo(() => {
-    const copy = cloneSkeleton(scene);
-    copy.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material = material;
-        child.frustumCulled = false;
-      }
-    });
-    return copy;
-  }, [scene, material]);
-  const normalized = useNormalized(cloned, targetHeight);
-  return { scene: cloned, ...normalized };
-}
-
 type EarlyHandFrame = [number, number, number, number, number, number, number];
 
 /* Lenis runtime poses, expressed as viewport-relative positions and raw-GLB
@@ -615,9 +571,6 @@ const EARLY_HAND_KEYFRAMES: EarlyHandFrame[] = [
   [0.8, 0.15, -0.46, 0.02, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
   [1, 0.68, -0.46, 0.018, Math.PI / 4, -7 * Math.PI / 4, -Math.PI / 4],
 ];
-
-const RAW_ARM_HEIGHT = 73.3446655;
-const NORMALIZED_ARM_HEIGHT = 5.15;
 
 function sampleEarlyHand(p: number, width: number, height: number) {
   let index = 0;
@@ -673,21 +626,44 @@ function EarlyHandRig() {
 const HAND_KEYFRAMES: Array<
   [number, number, number, number, number, number, number]
 > = [
-  [0.0, 1.5, -8.5, 0.5, -0.5, 0.05, 0.9],
-  [0.17, 1.7, -0.65, 0.42, -0.14, 0.05, 1.0], // OPEN pose
-  [0.22, 1.2, -3.6, 0.4, 0.0, 0.05, 0.95], // offscreen pose swap
-  [0.27, 0.7, -0.8, 0.16, 0.05, 0.02, 1.04], // POINT pose
-  [0.34, 0.65, -1.55, 0.08, 3.49, -0.28, 1.34], // Lenis light-start pose
+  [0.0, 0.95, -3.9, 0.3, 0.0, 0.03, 1.0], // just below the frame edge (it shows from ~-3.5)
+  [0.13, 0.7, -0.8, 0.16, 0.05, 0.02, 1.04], // POINT pose — risen in from below
+  [0.3, 0.65, -1.55, 0.08, 3.49, -0.28, 1.34], // Lenis light-start pose
   [0.42, 0.0, -1.0, 0.0, -0.244, -0.279, 1.2], // exact Heat start
-  [1.0, 1.7, -1.15, 0.0, -12.217, -0.279, 1.28], // page end: -700deg Y, matched to lenis.dev: bigger hand, finger high-right
+  [1.0, 1.7, -1.45, 0.0, -12.217, -0.279, 1.28], // page end: -700deg Y, bigger hand, finger high-right — sits a little lower than lenis.dev's so the palm clears the footer headline (x: see endHandX)
 ];
 
-function sampleHand(p: number) {
+/** The page-end hand x, nudged a few pixels right where the screen is wide
+    enough to take it (the forearm then crosses less of the right-aligned
+    footer headline). Only ever toward the edge and at most 0.2 units, and
+    never so far that the hand is cut off — 16:9 and narrower keep it as is. */
+const END_HAND_EDGE_GAP = 2.4;
+function endHandX(viewportWidth: number) {
+  const base = HAND_KEYFRAMES[HAND_KEYFRAMES.length - 1][1];
+  return base + THREE.MathUtils.clamp(viewportWidth / 2 - END_HAND_EDGE_GAP - base, 0, 0.2);
+}
+
+/** On narrow (portrait) screens the entrance poses sat half off the right
+    edge — they were placed for a landscape frame. This pulls the entrance
+    keyframes (rise, POINT, light-start) in just far enough to keep the hand
+    whole; wide screens get 0. */
+const RISE_EDGE_GAP = 1.45;
+const ENTRANCE_KEYFRAMES = 3;
+function entranceShiftX(viewportWidth: number) {
+  return THREE.MathUtils.clamp(viewportWidth / 2 - RISE_EDGE_GAP, -0.4, 0);
+}
+
+function sampleHand(p: number, endX: number, entranceShift: number) {
   const frames = HAND_KEYFRAMES;
   let i = 0;
   while (i < frames.length - 2 && p > frames[i + 1][0]) i++;
-  const [p0, x0, y0, rx0, ry0, rz0, s0] = frames[i];
-  const [p1, x1, y1, rx1, ry1, rz1, s1] = frames[i + 1];
+  const [p0, x0Frame, y0, rx0, ry0, rz0, s0] = frames[i];
+  const [p1, x1Frame, y1, rx1, ry1, rz1, s1] = frames[i + 1];
+  const x0 = x0Frame + (i < ENTRANCE_KEYFRAMES ? entranceShift : 0);
+  const x1 =
+    i + 1 === frames.length - 1
+      ? endX
+      : x1Frame + (i + 1 < ENTRANCE_KEYFRAMES ? entranceShift : 0);
   const t = p1 > p0 ? THREE.MathUtils.smoothstep((p - p0) / (p1 - p0), 0, 1) : 0;
   return {
     x: THREE.MathUtils.lerp(x0, x1, t),
@@ -701,22 +677,25 @@ function sampleHand(p: number) {
 
 function HandRig() {
   const group = useRef<THREE.Group>(null);
+  const viewportWidth = useThree((state) => state.viewport.width);
   const arm = useChromeArm(ARM_MODEL_URL, 5.05, lateSilverHandMaterial);
 
   useFrame(({ clock }) => {
     const g = group.current;
     if (!g) return;
     const p = handProgress.value;
-    const { x, y, rotX, rotY, rotZ, scale } = sampleHand(p);
+    const { x, y, rotX, rotY, rotZ, scale } = sampleHand(
+      p,
+      endHandX(viewportWidth),
+      entranceShiftX(viewportWidth),
+    );
 
     const idle = Math.sin(clock.elapsedTime * 0.8);
     g.position.set(x + idle * 0.025, y + idle * 0.055, 0);
     g.rotation.set(rotX + idle * 0.012, rotY, rotZ - idle * 0.01);
     g.scale.setScalar(scale);
 
-    const reveal = 1 - handHidden.value;
-    lateSilverHandMaterial.opacity = reveal;
-    g.visible = p > 0.001 && reveal > 0.001;
+    g.visible = p > 0.001 && handHidden.value < 0.5;
   });
 
   return (
@@ -734,7 +713,7 @@ function HandRig() {
 /* Scene + canvas                                                      */
 /* ------------------------------------------------------------------ */
 
-function Scene() {
+function Scene({ compact }: { compact: boolean }) {
   return (
     <>
       <ambientLight color="#a29a92" intensity={1} />
@@ -742,7 +721,7 @@ function Scene() {
       <directionalLight color="#efefef" position={[8, -3, 4]} intensity={1} />
       <SilverChromeEnvironment />
       <ScrollSync />
-      <Starfield />
+      <Starfield key={compact ? "compact" : "full"} count={compact ? STAR_COUNT_COMPACT : STAR_COUNT} />
       <LightParticles />
       <EarlyHandRig />
       <HandRig />
@@ -750,55 +729,11 @@ function Scene() {
   );
 }
 
-/** Some privacy extensions and locked-down GPUs make WebGL context creation
-    throw (three/r3f surface that as a render-time error). Without a boundary
-    here, that error is uncaught and Next's root error boundary tears down
-    the entire page for a failure that should only cost the decorative 3D
-    layer. Also fires gl-ready so the intro loader isn't left waiting on a
-    signal that will now never arrive from Canvas.onCreated. */
-class GLErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch(error: unknown) {
-    console.warn("GLCanvas: WebGL scene failed, hiding the 3D layer.", error);
-    window.dispatchEvent(new CustomEvent("gl-ready"));
-  }
-
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
-
 type GLPreferences = {
   reducedMotion: boolean;
   compactViewport: boolean;
   glSupported: boolean;
 };
-
-/** Synchronous WebGL2 capability probe. three r163+ only ever requests a
-    'webgl2' context (no WebGL1 fallback — see WebGLRenderer's constructor),
-    so that's the exact check that predicts whether mounting <Canvas> below
-    can succeed. Running it upfront means a device without WebGL2 (no
-    hardware acceleration on some corporate/VM setups, an old browser, WebGL
-    disabled outright) skips the attempt entirely instead of relying on the
-    failure path to catch it after the fact. The throwaway context is force-
-    lost right away so it doesn't sit on the browser's small live-context
-    budget before the real canvas asks for its own. */
-function detectWebGL2Support() {
-  try {
-    const probe = document.createElement("canvas");
-    const gl = probe.getContext("webgl2", { failIfMajorPerformanceCaveat: false });
-    if (!gl) return false;
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function useGLPreferences() {
   const [preferences, setPreferences] = useState<GLPreferences | null>(null);
@@ -848,6 +783,11 @@ export default function GLCanvas() {
      trips, we stop trying to render the scene rather than bouncing back and
      forth on every subsequent rejection. */
   const [glFailed, setGlFailed] = useState(false);
+  /* Sticky too: once the frame rate has dropped for a few seconds the canvas
+     renders at 1x for the rest of the visit — switching back and forth would
+     reallocate the drawing buffer each time and cause the very hitch this is
+     meant to prevent. */
+  const [lowPower, setLowPower] = useState(false);
   const canRenderScene =
     !!preferences && !preferences.reducedMotion && preferences.glSupported && !glFailed;
 
@@ -893,7 +833,9 @@ export default function GLCanvas() {
       {preferences && canRenderScene && (
         <GLErrorBoundary>
           <Canvas
-            dpr={preferences.compactViewport ? [1, 1.25] : [1, 1.75]}
+            /* 1.5x is the ceiling: on a 2x display it is visually the same
+               with MSAA on, at ~27% fewer pixels to shade than 1.75x */
+            dpr={lowPower ? 1 : preferences.compactViewport ? [1, 1.25] : [1, 1.5]}
             camera={{ position: [0, 0, 6], fov: 42 }}
             gl={{
               alpha: true,
@@ -910,7 +852,8 @@ export default function GLCanvas() {
               window.dispatchEvent(new CustomEvent("gl-ready"));
             }}
           >
-            <Scene />
+            <PerformanceMonitor flipflops={1} onDecline={() => setLowPower(true)} />
+            <Scene compact={preferences.compactViewport} />
           </Canvas>
         </GLErrorBoundary>
       )}

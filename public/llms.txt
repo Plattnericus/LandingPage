@@ -11,7 +11,7 @@
 - AI text index: https://plattnericus.dev/ai.txt
 - Full LLM profile: https://plattnericus.dev/llms-full.txt
 - GitHub: https://github.com/Plattnericus
-- Email: felix.plattner89@icloud.com
+- Email: mailme@plattnericus.dev
 
 ## Identity
 

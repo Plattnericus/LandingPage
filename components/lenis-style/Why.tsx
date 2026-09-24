@@ -68,9 +68,9 @@ export default function Why() {
     <section ref={sectionRef} className="why" id="why" aria-labelledby="why-title">
       <div className="why-sticky">
         <h2 className="why-title" id="why-title">
-          Why
+          Why{" "}
           <br />
-          full
+          full{" "}
           <br />
           stack?
         </h2>

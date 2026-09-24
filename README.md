@@ -31,6 +31,10 @@ it — no keyframes against a clock, no state passed between the two layers.
   from the visitor's own browser, no manual switcher — explains why the
   page looks static instead of leaving it unexplained. If the OS setting
   changes while the tab is open, the page reloads to actually reflect it.
+- **The intro never waits on the network.** The NEXOR wordmark's face is a
+  2 KB subset inlined straight into the stylesheet, so the intro paints its
+  real letterforms on the first frame; project clips only start loading once
+  the intro is done and a card is within two screens of the viewport.
 - **Built for machines as well as people.** Structured data, `llms.txt` /
   `llms-full.txt`, and `robots.ts` are tuned for both traditional search and
   the current wave of AI answer-engine crawlers (GPTBot, ClaudeBot,
@@ -67,7 +71,6 @@ ones:
 
 | Variable | Purpose |
 |---|---|
-| `GITHUB-TOKEN` | Raises the GitHub API rate limit for `/api/github` (also reads `GITHUB_TOKEN` or `GH_TOKEN` if set instead). Falls back to unauthenticated requests without it. |
 | `GOOGLE_SITE_VERIFICATION` | Fills the Google Search Console verification meta tag in `app/layout.tsx`. |
 | `NEXT_PUBLIC_SITE_URL` | Overrides the canonical URL used in metadata, the sitemap, and JSON-LD — useful for preview deployments. Defaults to `https://plattnericus.dev`. |
 
@@ -77,19 +80,19 @@ ones:
 app/
   page.tsx                 section order for the homepage, JSON-LD graph
   layout.tsx                fonts, global metadata
-  not-found.tsx              custom 404
+  not-found.tsx              custom 404 (starfield + orange arm, lazy WebGL)
   robots.ts, sitemap.ts       SEO surface
   ai/                          plain-text-friendly page for LLM crawlers
-  api/github/                   live GitHub repo stats (JSON)
   *-image.tsx, icon.tsx          generated OG/favicon images
 
 components/
   lenis-style/    the page sections — Hero, Why, Showcase, Rethink, Solution, Heat, Footer
-  gl/              the R3F canvas + scroll-synced 3D scene
+  gl/              the R3F canvas + scroll-synced 3D scene, the 404 scene,
+                    shared arm model/materials (arm.ts) and WebGL guards
   loader/           intro loader that gates the reveal animations
   providers/         Lenis + ScrollTrigger wiring
   motion/              cursor glow, dynamic favicon, the reduced-motion notice
-                        (+ its language table), the 404 page's blob/magnetic button
+                        (+ its language table)
   clawd/                the desktop mascot
   brand/                 the wordmark
 
@@ -97,9 +100,20 @@ lib/
   animation.ts    shared GSAP/ScrollTrigger setup + easing
   projects.ts      project data shown in Showcase
   site.ts           site identity/config used across metadata
-  github.ts          GitHub API client backing /api/github
   clawd.ts, palette.ts   mascot copy, color tokens
 ```
+
+## Media
+
+- Project clips (`public/projects/*.mp4`) are 912×684 — the cards are always
+  4:3 with `object-fit: cover`, so anything outside a centred 4:3 crop was
+  never visible — H.264 (CRF 27), muted, with `+faststart`.
+- Clawd's clips (`public/models/mascot/webp/`) are animated WebP at 192px,
+  2× the 96px display size. Bump `ASSET_VERSION` in `lib/clawd.ts` whenever
+  they are regenerated.
+- The NEXOR brand face is an inlined subset of UnifrakturCook (only N E X O R,
+  the digits and the space). A new letter in the wordmark means regenerating
+  it from `public/fonts/UnifrakturCook/` — see the comment in `globals.css`.
 
 ## Deployment
 

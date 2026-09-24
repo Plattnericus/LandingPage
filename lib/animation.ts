@@ -5,17 +5,13 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
-import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
-import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(
     useGSAP,
     ScrollTrigger,
     SplitText,
-    MorphSVGPlugin,
     CustomEase,
-    ScrambleTextPlugin,
   );
 
   if (!CustomEase.get("apple")) {

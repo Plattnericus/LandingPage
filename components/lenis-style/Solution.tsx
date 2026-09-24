@@ -14,7 +14,17 @@ export default function Solution() {
       const mm = gsap.matchMedia();
 
       mm.add(NO_MOTION_PREF, () => {
-        const split = SplitText.create(copy, { type: "words" });
+        /* aria "none": the words stay plain, readable text. The default
+           ("auto") hides every word and moves the text into an aria-label on
+           the <p> — which that element doesn't allow — so screen readers got
+           nothing at all, links included. Spans keep the markup valid inside
+           the <p> and <a> tags. */
+        const split = SplitText.create(copy, {
+          type: "words",
+          wordsClass: "word",
+          tag: "span",
+          aria: "none",
+        });
         gsap.fromTo(
           split.words,
           { autoAlpha: 0.14, yPercent: 12 },
@@ -65,10 +75,13 @@ export default function Solution() {
           platforms
         </a>{" "}
         real people use every day. All of it selfhosted, containerised and shipped from{" "}
-        <a href={siteConfig.github} target="_blank" rel="noreferrer">
-          github.com/Plattnericus
-        </a>
-        .
+        {/* keeps the full stop glued to the link — split words can wrap alone */}
+        <span className="nowrap">
+          <a href={siteConfig.github} target="_blank" rel="noreferrer">
+            github.com/Plattnericus
+          </a>
+          .
+        </span>
       </p>
       <p className="solution-foot">
         Building something?{" "}

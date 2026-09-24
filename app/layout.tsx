@@ -26,19 +26,9 @@ const panchang = localFont({
   display: "swap",
 });
 
-/* User-provided brand face. Keep this local so the NEXOR wordmark and intro
-   never depend on a third-party font request. */
-const unifrakturCook = localFont({
-  src: [
-    {
-      path: "../public/fonts/UnifrakturCook/UnifrakturCook-Bold.ttf",
-      weight: "700",
-      style: "normal",
-    },
-  ],
-  variable: "--font-unifraktur-cook",
-  display: "swap",
-});
+/* The NEXOR brand face is not loaded here: a 2 KB subset of it is inlined into
+   globals.css (see "NexorBrand" there), so the intro wordmark can paint in its
+   real glyphs on the very first frame, before any font request could finish. */
 
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
@@ -151,7 +141,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${anton.variable} ${roboto.variable} ${panchang.variable} ${unifrakturCook.variable}`}
+      className={`${anton.variable} ${roboto.variable} ${panchang.variable}`}
     >
       <body>{children}</body>
     </html>

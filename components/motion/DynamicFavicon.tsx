@@ -64,135 +64,55 @@ const TAN = PALETTE.accent;
 const SAND = PALETTE.accentSoft;
 const TEXT = PALETTE.light;
 
-function drawGlyph(ctx: CanvasRenderingContext2D, glyph: GlyphId, color: string, scale: number) {
-  ctx.save();
-  ctx.translate(32, 32);
-  ctx.scale(scale, scale);
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = 4;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+const FONT = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
 
-  const text = (value: string, size = 30) => {
-    ctx.font = `700 ${size}px -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(value, 0, 2);
-  };
+/** Canvas-style arc (clockwise, angles in radians) as an SVG path. */
+function arcPath(cx: number, cy: number, r: number, from: number, to: number) {
+  const x0 = cx + r * Math.cos(from);
+  const y0 = cy + r * Math.sin(from);
+  const x1 = cx + r * Math.cos(to);
+  const y1 = cy + r * Math.sin(to);
+  const large = to - from > Math.PI ? 1 : 0;
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
 
+/** The section glyph, drawn around (0, 0) in a 64-unit tile. */
+function glyphSvg(glyph: GlyphId, color: string) {
+  const text = (value: string, size = 30) =>
+    `<text x="0" y="2" fill="${color}" font-family="${FONT}" font-weight="700" font-size="${size}" text-anchor="middle" dominant-baseline="central">${value}</text>`;
+  const stroke = `fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
   switch (glyph) {
     case "n":
-      text("N");
-      break;
+      return text("N");
     case "quote":
-      ctx.beginPath();
-      ctx.roundRect(-11, -10, 5, 20, 2.5);
-      ctx.roundRect(-1, -10, 5, 20, 2.5);
-      ctx.roundRect(9, -4, 5, 14, 2.5);
-      ctx.fill();
-      break;
+      return `<g fill="${color}"><rect x="-11" y="-10" width="5" height="20" rx="2.5"/><rect x="-1" y="-10" width="5" height="20" rx="2.5"/><rect x="9" y="-4" width="5" height="14" rx="2.5"/></g>`;
     case "orbit":
-      ctx.beginPath();
-      ctx.arc(0, 0, 14, Math.PI * 0.75, Math.PI * 1.9);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(11, -8, 4.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(-13, 6, 3, 0, Math.PI * 2);
-      ctx.fill();
-      break;
+      return `<path d="${arcPath(0, 0, 14, Math.PI * 0.75, Math.PI * 1.9)}" ${stroke}/><circle cx="11" cy="-8" r="4.5" fill="${color}"/><circle cx="-13" cy="6" r="3" fill="${color}"/>`;
     case "grid":
-      ctx.beginPath();
-      ctx.roundRect(-13, -13, 11, 11, 3);
-      ctx.roundRect(2, -13, 11, 11, 3);
-      ctx.roundRect(-13, 2, 11, 11, 3);
-      ctx.fill();
-      ctx.globalAlpha = 0.55;
-      ctx.beginPath();
-      ctx.roundRect(2, 2, 11, 11, 3);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      break;
+      return `<g fill="${color}"><rect x="-13" y="-13" width="11" height="11" rx="3"/><rect x="2" y="-13" width="11" height="11" rx="3"/><rect x="-13" y="2" width="11" height="11" rx="3"/><rect x="2" y="2" width="11" height="11" rx="3" opacity="0.55"/></g>`;
     case "window":
-      ctx.beginPath();
-      ctx.roundRect(-14, -11, 28, 22, 4);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-14, -4);
-      ctx.lineTo(14, -4);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(-9, -7.5, 1.6, 0, Math.PI * 2);
-      ctx.arc(-4, -7.5, 1.6, 0, Math.PI * 2);
-      ctx.fill();
-      break;
+      return `<rect x="-14" y="-11" width="28" height="22" rx="4" ${stroke}/><path d="M-14 -4H14" ${stroke}/><circle cx="-9" cy="-7.5" r="1.6" fill="${color}"/><circle cx="-4" cy="-7.5" r="1.6" fill="${color}"/>`;
     case "branch":
-      ctx.beginPath();
-      ctx.moveTo(-8, -12);
-      ctx.lineTo(-8, 12);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-8, 0);
-      ctx.quadraticCurveTo(2, 0, 8, -8);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(-8, -12, 4, 0, Math.PI * 2);
-      ctx.arc(-8, 12, 4, 0, Math.PI * 2);
-      ctx.arc(9, -10, 4, 0, Math.PI * 2);
-      ctx.fill();
-      break;
+      return `<path d="M-8 -12V12M-8 0Q2 0 8 -8" ${stroke}/><g fill="${color}"><circle cx="-8" cy="-12" r="4"/><circle cx="-8" cy="12" r="4"/><circle cx="9" cy="-10" r="4"/></g>`;
     case "shield":
-      ctx.beginPath();
-      ctx.moveTo(0, -14);
-      ctx.lineTo(12, -9);
-      ctx.lineTo(12, 2);
-      ctx.quadraticCurveTo(12, 10, 0, 14);
-      ctx.quadraticCurveTo(-12, 10, -12, 2);
-      ctx.lineTo(-12, -9);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-5, 0);
-      ctx.lineTo(-1, 4);
-      ctx.lineTo(6, -4);
-      ctx.stroke();
-      break;
+      return `<path d="M0 -14L12 -9V2Q12 10 0 14Q-12 10 -12 2V-9Z" ${stroke}/><path d="M-5 0L-1 4L6 -4" ${stroke}/>`;
     case "braces":
-      text("{ }", 22);
-      break;
+      return text("{ }", 22);
     case "arrow":
-      ctx.beginPath();
-      ctx.moveTo(-11, 11);
-      ctx.lineTo(11, -11);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-1, -11);
-      ctx.lineTo(11, -11);
-      ctx.lineTo(11, 1);
-      ctx.stroke();
-      break;
+      return `<path d="M-11 11L11 -11M-1 -11H11V1" ${stroke}/>`;
     case "at":
-      text("@", 28);
-      break;
+      return text("@", 28);
   }
-  ctx.restore();
 }
 
 /**
- * Living browser tab: canvas favicon with a scroll progress ring whose glyph
+ * Living browser tab: SVG favicon with a scroll progress ring whose glyph
  * and the document title swap per section; dims with a dot when the tab is
  * hidden and spins the ring when it returns.
  */
 export default function DynamicFavicon() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext("2d");
-    if (!ctx || typeof ctx.roundRect !== "function") return;
 
     const baseTitle = document.title;
 
@@ -200,7 +120,7 @@ export default function DynamicFavicon() {
        links) can be re-inserted into <head> by the client runtime after
        this effect has already taken over the original tags — e.g. right
        after a Fast Refresh or a client-only metadata resolution pass. Those
-       fresh copies silently outrank our canvas-driven one and the tab reverts
+       fresh copies silently outrank our live one and the tab reverts
        to the static "N" tile. This used to delete the rival tags outright,
        but React 19 hoists and tracks <link> tags itself; ripping one out
        from under it left React holding a reference to an already-detached
@@ -215,52 +135,58 @@ export default function DynamicFavicon() {
       if (links.length === 0) {
         const link = document.createElement("link");
         link.rel = "icon";
-        link.type = "image/png";
+        link.type = "image/svg+xml";
         link.href = url;
         document.head.appendChild(link);
         return;
       }
       links.forEach((link) => {
-        link.type = "image/png";
+        link.type = "image/svg+xml";
         link.href = url;
       });
     };
     let lastUrl = "";
 
+    /* The icon is an SVG string, not a canvas: a frame costs a few string
+       concatenations instead of a PNG encode on the main thread (which used
+       to run up to 60 times a second mid-scroll). Frames are still coalesced
+       to at most one every PUBLISH_MS, because each new icon also makes the
+       browser reload its tab icon; the latest frame always wins. */
+    const PUBLISH_MS = 100;
+    let cancelled = false;
+    let latest = "";
+    let publishTimer = 0;
+    let lastPublish = -Infinity;
+    const flush = () => {
+      publishTimer = 0;
+      if (cancelled || !latest || latest === lastUrl) return;
+      lastPublish = performance.now();
+      lastUrl = latest;
+      claimFavicon(latest);
+    };
+    const publish = (url: string) => {
+      latest = url;
+      if (publishTimer) return;
+      const wait = PUBLISH_MS - (performance.now() - lastPublish);
+      if (wait <= 0) flush();
+      else publishTimer = window.setTimeout(flush, wait);
+    };
+
     let progress = 0;
     let glyph: GlyphId = "n";
 
     const draw = (mode: "active" | "hidden", spin = 0, pop = 1) => {
-      ctx.clearRect(0, 0, 64, 64);
-
-      ctx.beginPath();
-      ctx.roundRect(2, 2, 60, 60, 16);
-      ctx.fillStyle = PALETTE.tile;
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(237, 224, 212, 0.18)";
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.lineWidth = 5;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = mode === "hidden" ? "rgba(217, 119, 87, 0.5)" : TAN;
-      const startAngle = -Math.PI / 2 + spin * Math.PI * 2;
-      ctx.arc(32, 32, 25, startAngle, startAngle + Math.max(0.03, progress) * Math.PI * 2);
-      ctx.stroke();
-
-      drawGlyph(ctx, glyph, mode === "hidden" ? "rgba(242, 237, 230, 0.45)" : TEXT, pop);
-
-      if (mode === "hidden") {
-        ctx.beginPath();
-        ctx.arc(50, 14, 6, 0, Math.PI * 2);
-        ctx.fillStyle = SAND;
-        ctx.fill();
-      }
-
-      const url = canvas.toDataURL("image/png");
-      lastUrl = url;
-      claimFavicon(url);
+      const ringStart = -Math.PI / 2 + spin * Math.PI * 2;
+      const ring = arcPath(32, 32, 25, ringStart, ringStart + Math.max(0.03, progress) * Math.PI * 2);
+      const glyphColor = mode === "hidden" ? "rgba(242, 237, 230, 0.45)" : TEXT;
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
+        `<rect x="2" y="2" width="60" height="60" rx="16" fill="${PALETTE.tile}" stroke="rgba(237, 224, 212, 0.18)" stroke-width="2"/>` +
+        `<path d="${ring}" fill="none" stroke="${mode === "hidden" ? "rgba(217, 119, 87, 0.5)" : TAN}" stroke-width="5" stroke-linecap="round"/>` +
+        `<g transform="translate(32 32) scale(${pop.toFixed(3)})">${glyphSvg(glyph, glyphColor)}</g>` +
+        (mode === "hidden" ? `<circle cx="50" cy="14" r="6" fill="${SAND}"/>` : "") +
+        `</svg>`;
+      publish(`data:image/svg+xml,${encodeURIComponent(svg)}`);
     };
 
     draw("active");
@@ -269,10 +195,17 @@ export default function DynamicFavicon() {
        re-insertion, a Fast Refresh, another script) and repoints it to the
        current frame the same tick, so the tab icon can never drift back to
        a static one. */
-    const headObserver = new MutationObserver(() => claimFavicon(lastUrl));
+    const headObserver = new MutationObserver(() => {
+      if (lastUrl) claimFavicon(lastUrl);
+    });
     headObserver.observe(document.head, { childList: true });
 
-    if (reduce) return () => headObserver.disconnect();
+    if (reduce) {
+      return () => {
+        cancelled = true;
+        headObserver.disconnect();
+      };
+    }
 
     const triggers: ScrollTrigger[] = [];
     const popProxy = { value: 1 };
@@ -375,6 +308,8 @@ export default function DynamicFavicon() {
       typeTween?.kill();
       document.removeEventListener("visibilitychange", onVisibility);
       headObserver.disconnect();
+      cancelled = true;
+      window.clearTimeout(publishTimer);
       document.title = baseTitle;
     };
   }, []);

@@ -1,16 +1,11 @@
-export type ProjectPreview =
-  | {
-      kind: "video";
-      src: string;
-      poster: string;
-      objectPosition?: string;
-    }
-  | {
-      kind: "swap";
-      sources: readonly [string, string];
-      poster: string;
-      objectPosition?: string;
-    };
+/** Every card preview is a short, muted, looping 4:3 clip. `poster` is not
+    shown on the page — it is the still listed in the sitemap for image search. */
+export type ProjectPreview = {
+  kind: "video";
+  src: string;
+  poster: string;
+  objectPosition?: string;
+};
 
 export type Project = {
   name: string;
@@ -118,11 +113,9 @@ export const projects: Project[] = [
     liveUrl: "https://modrinth.com/mod/projectile.preview",
     githubUrl: "https://github.com/Plattnericus",
     preview: {
-      kind: "swap",
-      sources: [
-        "/projects/projectile_preview_01.gif",
-        "/projects/projectile_preview_02.gif",
-      ],
+      /* both in-game takes in one seamless loop, crossfading between them */
+      kind: "video",
+      src: "/projects/projectile_preview.mp4",
       poster: "/showcase/projectilepreview-mod.png",
     },
   },

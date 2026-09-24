@@ -1,4 +1,4 @@
-/** Clawd's 2D animation clips (GIF renders of the mascot rig) and the
+/** Clawd's 2D animation clips (animated WebP renders of the mascot rig) and the
     behavior table for the corner pet. */
 
 export type ClawdClip =
@@ -15,30 +15,30 @@ export type ClawdClip =
   | "COMPLETE"
   | "ERROR_RETRY";
 
-/* Bump this whenever the GIF files under public/models/mascot/GIF/ are
-   regenerated — same filenames, new pixel content, and browsers otherwise
-   keep serving whatever they cached from an earlier version (which is what
-   made clips look inconsistently positioned/occasionally-missing: some tabs
-   had a mix of old and newly-recentered frames). */
-const ASSET_VERSION = "4";
+/* Animated WebP renders of the rig at 192px (2x the 96px display size) —
+   about a third of the old 384px GIFs' weight, same frames and timing.
+   Bump this whenever the files under public/models/mascot/webp/ are
+   regenerated: same filenames, new pixel content, and browsers otherwise keep
+   serving whatever they cached from an earlier version. */
+const ASSET_VERSION = "5";
 
 function clip(file: string) {
-  return `/models/mascot/GIF/${file}?v=${ASSET_VERSION}`;
+  return `/models/mascot/webp/${file}?v=${ASSET_VERSION}`;
 }
 
-export const CLAWD_GIF: Record<ClawdClip, string> = {
-  IDLE: clip("01_IDLE.gif"),
-  THINKING: clip("02_THINKING.gif"),
-  TYPING: clip("03_TYPING.gif"),
-  READING_FILES: clip("04_READING_FILES.gif"),
-  RUNNING_COMMAND: clip("05_RUNNING_COMMAND.gif"),
-  BUILDING: clip("06_BUILDING.gif"),
-  TESTING: clip("07_TESTING.gif"),
-  DEBUGGING: clip("08_DEBUGGING.gif"),
-  PERMISSION: clip("09_PERMISSION.gif"),
-  SUBAGENTS: clip("10_SUBAGENTS.gif"),
-  COMPLETE: clip("11_COMPLETE.gif"),
-  ERROR_RETRY: clip("12_ERROR_RETRY.gif"),
+export const CLAWD_SPRITES: Record<ClawdClip, string> = {
+  IDLE: clip("01_IDLE.webp"),
+  THINKING: clip("02_THINKING.webp"),
+  TYPING: clip("03_TYPING.webp"),
+  READING_FILES: clip("04_READING_FILES.webp"),
+  RUNNING_COMMAND: clip("05_RUNNING_COMMAND.webp"),
+  BUILDING: clip("06_BUILDING.webp"),
+  TESTING: clip("07_TESTING.webp"),
+  DEBUGGING: clip("08_DEBUGGING.webp"),
+  PERMISSION: clip("09_PERMISSION.webp"),
+  SUBAGENTS: clip("10_SUBAGENTS.webp"),
+  COMPLETE: clip("11_COMPLETE.webp"),
+  ERROR_RETRY: clip("12_ERROR_RETRY.webp"),
 };
 
 /** Clips Clawd drifts into on his own while nothing is happening. */

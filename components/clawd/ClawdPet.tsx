@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, ScrollTrigger, useGSAP } from "@/lib/animation";
+import { MM_DESKTOP, gsap, ScrollTrigger, useGSAP } from "@/lib/animation";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import {
-  CLAWD_GIF,
+  CLAWD_SPRITES,
   CLICK_REACTIONS,
   IDLE_FLAVOR,
   SCROLL_CLIPS,
@@ -25,6 +25,63 @@ type PetState = {
 
 const IDLE_STATE: PetState = { clip: "IDLE", kind: "idle", until: Infinity };
 
+/** Loads the idle sprite (calls onReady once it can paint, or after a hard
+    timeout) and warms the other clips off the critical path; returns a
+    cancel function. */
+function loadSprites(onReady: () => void) {
+  let cancelled = false;
+  const markReady = () => {
+    if (!cancelled) onReady();
+  };
+
+  /* Absolute guarantee: reveal Clawd within 2.5s even if the sprite request
+     stalls without ever firing load *or* error (a hung fetch, not a clean
+     failure) — he must never be trapped permanently unmounted behind it. */
+  const hardReady = window.setTimeout(markReady, 2500);
+
+  const idleImg = new Image();
+  idleImg.onload = markReady;
+  idleImg.onerror = () => {
+    /* one retry, then reveal the pet anyway on whatever the browser
+       eventually resolves — a flaky first request must not permanently
+       hide Clawd */
+    window.setTimeout(() => {
+      if (cancelled) return;
+      const retry = new Image();
+      retry.onload = markReady;
+      retry.onerror = markReady;
+      retry.src = CLAWD_SPRITES.IDLE;
+    }, 600);
+  };
+  idleImg.src = CLAWD_SPRITES.IDLE;
+
+  /* warm the rest of the clips off the critical path, but with a bounded
+     timeout — a bare requestIdleCallback can get starved indefinitely
+     while GSAP/ScrollTrigger/Three.js keep the main thread busy, which is
+     exactly what let a freshly-clicked clip sometimes fail to have loaded
+     yet. The timeout guarantees it fires within 2s regardless. */
+  const rest = Object.values(CLAWD_SPRITES).filter((src) => src !== CLAWD_SPRITES.IDLE);
+  const schedule = (cb: () => void) => {
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(cb, { timeout: 2000 });
+    } else {
+      window.setTimeout(cb, 400);
+    }
+  };
+  schedule(() => {
+    if (cancelled) return;
+    rest.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  });
+
+  return () => {
+    cancelled = true;
+    window.clearTimeout(hardReady);
+  };
+}
+
 export default function ClawdPet() {
   const { lenisRef, introDone } = useSmoothScroll();
   const [state, setState] = useState<PetState>(IDLE_STATE);
@@ -43,61 +100,22 @@ export default function ClawdPet() {
     setState(next);
   });
 
-  /* appear only after the intro, and only on motion-friendly desktops */
+  /* appear only after the intro, and only on motion-friendly desktops. The
+     media query gates the downloads too: on phones (where CSS hides Clawd
+     anyway) not a single clip is fetched. It is watched live, so a window
+     that grows into desktop size still gets him. */
   useEffect(() => {
     if (!introDone) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    let cancelled = false;
-    const markReady = () => {
-      if (!cancelled) setReady(true);
+    const desktop = window.matchMedia(MM_DESKTOP);
+    let stop: (() => void) | null = null;
+    const start = () => {
+      if (!stop && desktop.matches) stop = loadSprites(() => setReady(true));
     };
-
-    /* Absolute guarantee: reveal Clawd within 2.5s even if the sprite request
-       stalls without ever firing load *or* error (a hung fetch, not a clean
-       failure) — he must never be trapped permanently unmounted behind it. */
-    const hardReady = window.setTimeout(markReady, 2500);
-
-    const idleImg = new Image();
-    idleImg.onload = markReady;
-    idleImg.onerror = () => {
-      /* one retry, then reveal the pet anyway on whatever the browser
-         eventually resolves — a flaky first request must not permanently
-         hide Clawd */
-      window.setTimeout(() => {
-        if (cancelled) return;
-        const retry = new Image();
-        retry.onload = markReady;
-        retry.onerror = markReady;
-        retry.src = CLAWD_GIF.IDLE;
-      }, 600);
-    };
-    idleImg.src = CLAWD_GIF.IDLE;
-
-    /* warm the rest of the clips off the critical path, but with a bounded
-       timeout — a bare requestIdleCallback can get starved indefinitely
-       while GSAP/ScrollTrigger/Three.js keep the main thread busy, which is
-       exactly what let a freshly-clicked clip sometimes fail to have loaded
-       yet. The timeout guarantees it fires within 2s regardless. */
-    const rest = Object.values(CLAWD_GIF).filter((src) => src !== CLAWD_GIF.IDLE);
-    const schedule = (cb: () => void) => {
-      if (typeof window.requestIdleCallback === "function") {
-        window.requestIdleCallback(cb, { timeout: 2000 });
-      } else {
-        window.setTimeout(cb, 400);
-      }
-    };
-    schedule(() => {
-      if (cancelled) return;
-      rest.forEach((src) => {
-        const img = new Image();
-        img.src = src;
-      });
-    });
-
+    start();
+    desktop.addEventListener("change", start);
     return () => {
-      cancelled = true;
-      window.clearTimeout(hardReady);
+      desktop.removeEventListener("change", start);
+      stop?.();
     };
   }, [introDone]);
 
@@ -154,10 +172,14 @@ export default function ClawdPet() {
           const current = stateRef.current;
           const stillScrolling =
             current.kind === "velocity" && performance.now() < current.until;
-          const clip = stillScrolling
-            ? current.clip
-            : SCROLL_CLIPS[Math.floor(Math.random() * SCROLL_CLIPS.length)];
-          propose({ clip, kind: "velocity", until: performance.now() + 1500 });
+          if (stillScrolling) {
+            /* same clip, just keep it alive — extending the deadline in the
+               ref avoids re-rendering Clawd every 200ms of a long scroll */
+            stateRef.current = { ...current, until: performance.now() + 1500 };
+          } else {
+            const clip = SCROLL_CLIPS[Math.floor(Math.random() * SCROLL_CLIPS.length)];
+            propose({ clip, kind: "velocity", until: performance.now() + 1500 });
+          }
         }
       } else {
         velocityStart = 0;
@@ -199,18 +221,18 @@ export default function ClawdPet() {
   }, [ready, lenisRef]);
 
   /* Swapping <img src> straight to state.clip flashes a blank frame on every
-     change — the browser un-paints the old bitmap before the new GIF is
+     change — the browser un-paints the old bitmap before the new sprite is
      decoded, which reads as a black flicker over the dark sections. Decode
      the next clip off-screen first and only repoint the visible <img> once
      it's actually paintable, so the old frame stays put until the new one
      can replace it with nothing in between. */
-  const [displaySrc, setDisplaySrc] = useState(CLAWD_GIF.IDLE);
+  const [displaySrc, setDisplaySrc] = useState(CLAWD_SPRITES.IDLE);
   useEffect(() => {
     /* Gated on ready for the same reason the sprite itself is: with reduced
        motion (or before the intro finishes) Clawd never mounts, so this
-       decode-ahead fetch would otherwise pull a GIF nobody is going to see. */
+       decode-ahead fetch would otherwise pull a sprite nobody is going to see. */
     if (!ready) return;
-    const nextSrc = CLAWD_GIF[state.clip];
+    const nextSrc = CLAWD_SPRITES[state.clip];
     let cancelled = false;
     const img = new Image();
     img.src = nextSrc;
@@ -346,7 +368,7 @@ export default function ClawdPet() {
         onPointerDown={onPointerDown}
         aria-label="Clawd, the site mascot — click for a reaction, drag to move him"
       >
-        {/* plain <img>: animated GIFs must not go through next/image optimization */}
+        {/* plain <img>: animated sprites must not go through next/image optimization */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={displaySrc} alt="" width={96} height={96} draggable={false} />
       </button>

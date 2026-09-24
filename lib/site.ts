@@ -10,7 +10,7 @@ export const siteConfig = {
   claim: "Building reliable software, infrastructure and security-focused systems.",
   github: "https://github.com/Plattnericus",
   modrinth: "https://modrinth.com/user/Plattnericus",
-  email: "felix.plattner89@icloud.com",
+  email: "mailme@plattnericus.dev",
   locale: "en_US",
   keywords: [
     "Nexor",

@@ -8,15 +8,18 @@ import {
   MM_MOBILE,
   NO_MOTION_PREF,
   PIN,
+  ScrollTrigger,
   gsap,
   useGSAP,
 } from "@/lib/animation";
+import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { projects } from "@/lib/projects";
 import { siteConfig } from "@/lib/site";
 import ProjectPreview from "./ProjectPreview";
 
 export default function Showcase() {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { lenisRef } = useSmoothScroll();
 
   useGSAP(
     () => {
@@ -28,20 +31,64 @@ export default function Showcase() {
       const media = gsap.matchMedia();
 
       media.add(MM_DESKTOP, () => {
-        gsap.to(track, {
+        /* The pin is CSS sticky (see .showcase-pin), the same technique the
+           Rethink and Heat sections use — not a GSAP pin. A GSAP pin flips the
+           element to position: fixed and back, which the browser records as
+           layout shifts (CLS ≈ 3.8 on every desktop scroll-through) and which
+           made ScrollTrigger reset the page to the top when the viewport
+           crossed the mobile breakpoint. Sticky needs the section to be as
+           tall as the scroll the horizontal travel consumes, so it is sized
+           here before every refresh measures it. */
+        const sizeSection = () => {
+          section.style.height = `${window.innerHeight + PIN.showcase + distance() * 0.4}px`;
+        };
+        sizeSection();
+        ScrollTrigger.addEventListener("refreshInit", sizeSection);
+
+        const tween = gsap.to(track, {
           x: () => -distance(),
           ease: "none",
           scrollTrigger: {
             id: "showcase",
             trigger: section,
             start: "top top",
-            end: () => `+=${PIN.showcase + distance() * 0.4}`,
+            end: "bottom bottom",
             scrub: 1,
-            pin: ".showcase-pin",
-            anticipatePin: 1,
             invalidateOnRefresh: true,
           },
         });
+
+        /* Keyboard focus on a card that sits off to the side: the pin clips
+           with overflow: clip, so the browser can no longer scroll it sideways
+           (that used to shove the whole row — heading included — out of view
+           for good). Instead the page scrolls to the point in the pin where
+           that card is centred on screen. */
+        const onFocusIn = (event: FocusEvent) => {
+          const st = tween.scrollTrigger;
+          const item = (event.target as Element | null)?.closest<HTMLElement>(
+            ".showcase-card, .showcase-endcap",
+          );
+          const total = distance();
+          if (!st || !item || total <= 0) return;
+          const rect = item.getBoundingClientRect();
+          const baseLeft = rect.left - Number(gsap.getProperty(track, "x"));
+          const targetX = gsap.utils.clamp(
+            -total,
+            0,
+            window.innerWidth / 2 - rect.width / 2 - baseLeft,
+          );
+          const y = st.start + (-targetX / total) * (st.end - st.start);
+          const lenis = lenisRef.current;
+          if (lenis) lenis.scrollTo(y, { duration: 0.9 });
+          else window.scrollTo({ top: y, behavior: "smooth" });
+        };
+        section.addEventListener("focusin", onFocusIn);
+
+        return () => {
+          ScrollTrigger.removeEventListener("refreshInit", sizeSection);
+          section.removeEventListener("focusin", onFocusIn);
+          section.style.removeProperty("height");
+        };
       });
 
       media.add(MM_MOBILE, () => {
@@ -95,13 +142,13 @@ export default function Showcase() {
       <div className="showcase-pin">
         <div className="showcase-head">
           <h2 className="showcase-title" id="showcase-title">
-            Nexor
+            Nexor{" "}
             <br />
             runs live
           </h2>
           <p className="showcase-copy">
             Not mockups — deployments. A school platform students open every morning, a 3D
-            portfolio, a browser desktop, a Minecraft mod on Modrinth. Everything below is
+            portfolio, a browser desktop, a Minecraft mod on Modrinth. Everything here is
             real, and most of it is one click away.
           </p>
         </div>

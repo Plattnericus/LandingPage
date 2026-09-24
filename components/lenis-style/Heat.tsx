@@ -55,18 +55,24 @@ export default function Heat() {
           ...hidden,
         });
 
-        gsap.set(titleLines, { yPercent: 100 });
-        gsap.to(titleLines, {
-          yPercent: 0,
-          duration: TITLE_TWEEN_SECONDS,
-          stagger: 0.2,
-          ease: EASE.lenisExpo,
-          scrollTrigger: {
-            trigger: section,
-            start: "top 90%",
-            once: true,
+        /* fromTo, not set + to: the tween owns its hidden start state, so a
+           revert/re-run (React StrictMode mounts effects twice in dev) can't
+           leave the title parked inside its mask after the reveal played */
+        gsap.fromTo(
+          titleLines,
+          { yPercent: 100 },
+          {
+            yPercent: 0,
+            duration: TITLE_TWEEN_SECONDS,
+            stagger: 0.2,
+            ease: EASE.lenisExpo,
+            scrollTrigger: {
+              trigger: section,
+              start: "top 90%",
+              once: true,
+            },
           },
-        });
+        );
 
         let activeCount = -1;
 
@@ -170,33 +176,31 @@ export default function Heat() {
           <h2 id="heat-title">
             <span className="heat-title-line">
               <span className="heat-title-line-inner">Nexor brings</span>
-            </span>
+            </span>{" "}
             <span className="heat-title-line ht-2">
               <span className="heat-title-line-inner">the heat</span>
             </span>
           </h2>
         </aside>
 
-        <div
+        <ul
           className="heat-card-stage"
-          role="list"
           aria-label="Nexor capabilities"
           style={{ "--heat-card-count": skills.length } as CSSProperties}
         >
           {skills.map((skill, index) => (
-            <article
+            <li
               key={skill}
               className="heat-card"
-              role="listitem"
               style={{ "--heat-card-index": index } as CSSProperties}
             >
               <p className="hc-num">
                 {String(index + 1).padStart(2, "0")}
               </p>
               <p className="hc-label">{skill}</p>
-            </article>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* NEXOR brand face — a subset of UnifrakturCook (OFL, © j. 'mach' wust /
+   Peter Wiegel; see public/fonts/UnifrakturCook/OFL.txt) holding only the
+   glyphs the wordmark needs: N E X O R, the digits and the space. It is renamed
+   because the OFL reserves the original name for unmodified copies. Inlined
+   as a data URI on purpose: this stylesheet is render-blocking, so the intro
+   and hero wordmark have their real letterforms on the very first frame —
+   no request, no fallback serif, no swap mid-animation. Adding a letter to
+   the wordmark means regenerating this subset. */
+@font-face {
+  font-family: "NexorBrand";
+  src: url("data:font/woff2;base64,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") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
 /* ------------------------------------------------------------------ */
 /* Design tokens — lenis.dev-inspired system                           */
 /* ------------------------------------------------------------------ */
@@ -23,23 +39,16 @@
   --font-ui: var(--font-roboto), Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-head: var(--font-anton), Anton, sans-serif;
   --font-ext: var(--font-panchang), Panchang, sans-serif;
-  --font-brand: var(--font-unifraktur-cook), "UnifrakturCook", serif;
+  --font-brand: "NexorBrand", serif;
   --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
 
-  /* legacy tokens still used by /ai and the 404 page — rethemed to the
-     terracotta world so those routes match without markup changes */
+  /* older tokens still used by the /ai page and the cursor accent */
   --bg: #120d0a;
-  --bg-deep: #0b0908;
   --text: #f2ede6;
   --muted: #c7b8ac;
   --sand: #de886d;
   --tan: #d97757;
   --copper: #b0644a;
-  --coffee: #7a4632;
-  --ink: #0b0908;
-  --card: rgba(242, 237, 230, 0.06);
-  --border: rgba(242, 237, 230, 0.14);
-  --glow: rgba(222, 136, 109, 0.22);
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 }
 
@@ -122,6 +131,17 @@ main {
 /* UI atoms                                                            */
 /* ------------------------------------------------------------------ */
 
+/* one keyboard focus ring for the whole site, in the brand colour instead of
+   the browser's default blue — deep rust on the cream half for contrast */
+:where(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+:where(.solution, .heat, .footer-giant) :where(a, button):focus-visible {
+  outline-color: var(--accent-strong);
+}
+
 .u-label {
   font-family: var(--font-ui);
   font-size: 0.82rem;
@@ -150,7 +170,6 @@ main {
   cursor: pointer;
   overflow: hidden;
   transition: filter 0.25s ease;
-  will-change: transform;
 }
 
 .pill:hover {
@@ -167,6 +186,14 @@ main {
   box-shadow: inset 0 0 0 1.5px var(--button-accent);
   display: grid;
   place-items: center;
+}
+
+/* On the cream sections the 1.5px ring melts into the page (orange on cream
+   has little contrast, orange on the dark hero has a lot), so the black cell
+   seemed glued to the pill's rounded edge. A 3px ring gives it the same
+   visible margin the hero pills have. */
+:where(.solution, .heat, .footer-giant) .pill-icon {
+  box-shadow: inset 0 0 0 3px var(--button-accent);
 }
 
 .pill-icon svg {
@@ -217,6 +244,10 @@ main {
 
 .hero-mark-wrap {
   position: relative;
+  /* scrubbed (transform + opacity) as the hero scrolls away: one promoted
+     layer lets the compositor move it, instead of repainting the huge
+     wordmark and its 60px drop shadow on every scroll frame */
+  will-change: transform, opacity;
 }
 
 .hero-wordmark {
@@ -239,7 +270,6 @@ main {
 .hw-letter,
 .hs-letter {
   display: inline-block;
-  will-change: transform;
 }
 
 .hero-wordmark .hw-mask {
@@ -424,8 +454,20 @@ main {
   flex-direction: column;
   justify-content: center;
   gap: clamp(2rem, 6vh, 5rem);
-  overflow: hidden;
+  /* clip, not hidden: a hidden box can still be scrolled by the browser (e.g.
+     to reveal a keyboard-focused card), which shifted the whole row sideways */
+  overflow: clip;
   padding: 10vh 0 6vh;
+}
+
+/* desktop: CSS sticky pin — the section is sized in Showcase.tsx */
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .showcase-pin {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    min-height: 0;
+  }
 }
 
 .showcase-head {
@@ -521,21 +563,6 @@ main {
 
 .sc-video {
   z-index: 0;
-}
-
-.sc-swap-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.6s var(--ease-out-expo);
-  will-change: opacity;
-}
-
-.sc-swap-layer[data-frame-state="active"] {
-  z-index: 1;
-  opacity: 1;
 }
 
 .sc-arrow {
@@ -641,6 +668,9 @@ main {
 /* Rethink — exact Lenis sticky zoom + horizontal light wipe           */
 /* ------------------------------------------------------------------ */
 
+/* The custom properties below only describe the resting (progress 0) state
+   before any JS runs. While scrolling, Rethink.tsx writes the transforms and
+   opacities inline on the individual elements. */
 .rethink {
   --rethink-progress-1: 0;
   --rt-enter-scale: 0;
@@ -693,9 +723,8 @@ main {
   /* rt-first exits through the top edge (translateY), rt-second through the
      bottom (pushed there by rethink-zoom's scale-from-center) — both used to
      hit the overflow:hidden clip as a hard, fully-opaque mid-glyph cutoff.
-     --rethink-text-fade is computed in Rethink.tsx from the block's actual
-     measured distance to that clip edge, so it always reaches 0 just before
-     the clip would become visible, at any viewport size. */
+     Rethink.tsx fades them (inline opacity) so they always reach 0 just
+     before the clip would become visible, at any viewport size. */
   opacity: var(--rethink-text-fade);
   will-change: transform, opacity;
 }
@@ -819,7 +848,6 @@ main {
 
 .solution-copy .word {
   display: inline-block;
-  will-change: transform, opacity;
 }
 
 .solution-foot {
@@ -830,6 +858,13 @@ main {
 
 .solution-foot a {
   color: var(--accent-strong);
+  /* colour alone doesn't set these apart from the grey text around them */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------------------ */
@@ -909,11 +944,17 @@ main {
 
 .heat-title-line-inner {
   display: inline-block;
-  will-change: transform;
 }
 
 .heat-title-line.ht-2 {
   color: var(--grey);
+}
+
+/* Clawd lives in the top-right corner on desktop — keep the title clear of him */
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .heat-title {
+    right: calc(var(--heat-safe) + 96px + clamp(0.8rem, 2vw, 1.8rem));
+  }
 }
 
 .heat-card-stage {
@@ -995,12 +1036,18 @@ main {
   line-height: 0.88;
 }
 
+/* capped by height too, so the whole footer fits a short laptop window —
+   at 34svh "NEXOR IS OPEN" was cut off at the top of a 1512×763 viewport */
 .fx-l1 {
-  font-size: clamp(3.6rem, min(12.5vw, 34svh), 32rem);
+  font-size: clamp(3.6rem, min(12.5vw, 21svh), 32rem);
 }
 
 .fx-l1 .fx-accent {
   color: var(--accent-strong);
+}
+
+.fx-l1-line {
+  display: block;
 }
 
 .fx-l2 {
@@ -1008,7 +1055,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-size: clamp(2.3rem, min(8.6vw, 34svh), 22rem);
+  font-size: clamp(2.3rem, min(8.6vw, 14svh), 22rem);
   text-align: right;
   margin-top: clamp(0.5rem, 2svh, 2rem);
 }
@@ -1030,6 +1077,7 @@ main {
   align-items: flex-start;
   justify-content: flex-start;
   gap: 1.6rem;
+  width: 100%;
   margin-top: 6vh;
 }
 
@@ -1040,6 +1088,11 @@ main {
 }
 
 .fx-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  /* comfortable tap target without changing how the row looks */
+  min-height: 32px;
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.05em;
@@ -1144,7 +1197,7 @@ main {
 }
 
 /* ------------------------------------------------------------------ */
-/* Clawd pet — fixed corner mascot, 2D GIF clips                       */
+/* Clawd pet — fixed corner mascot, 2D animated sprite clips           */
 /* ------------------------------------------------------------------ */
 
 .clawd-pet {
@@ -1328,7 +1381,7 @@ main {
   .showcase-pin {
     min-height: auto;
     justify-content: flex-start;
-    overflow: hidden;
+    overflow: clip;
     padding: 12vh 0 16vh;
   }
 
@@ -1416,6 +1469,9 @@ main {
       max(10rem, calc(100svh - 6.5rem - 2 * var(--heat-safe)))
     );
     --heat-position-size: var(--heat-card-size);
+    --heat-num-size: clamp(2.4rem, 13.5vw, 3.8rem);
+    --heat-num-pad: clamp(0.6rem, calc(12 / 375 * 100vw), 1rem);
+    --heat-strip: calc(var(--heat-num-pad) + var(--heat-num-size) * 0.86 + 0.5rem);
     height: 750vh;
     height: 750svh;
   }
@@ -1447,23 +1503,37 @@ main {
   }
 
   .heat-card {
+    /* Phones stack the cards almost straight down, so only a top strip of
+       each covered card shows — the number sits there. The number is sized
+       and padded to fit that strip, and on very short screens the cards get
+       a little shorter so the strip never drops below one number's height
+       (the numbers used to be cut in half) — but never below 10rem, which on
+       a phone held sideways would otherwise squash the cards flat. */
+    --heat-card-h: min(
+      var(--heat-card-size),
+      max(10rem, calc(100% - (var(--heat-card-count) - 1) * var(--heat-strip)))
+    );
     top: calc(
-      (100% - var(--heat-card-size)) /
+      (100% - var(--heat-card-h)) /
         (var(--heat-card-count) - 1) * var(--heat-card-index)
     );
     left: calc(
       (100% - var(--heat-card-size)) /
         (var(--heat-card-count) - 1) * var(--heat-card-index)
     );
-    padding: clamp(1rem, calc(24 / 375 * 100vw), 1.5rem);
+    height: var(--heat-card-h);
+    aspect-ratio: auto;
+    padding: var(--heat-num-pad) clamp(1rem, calc(24 / 375 * 100vw), 1.5rem)
+      clamp(1rem, calc(24 / 375 * 100vw), 1.5rem);
     background: rgba(242, 237, 230, 0.9);
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
   }
 
+
   .hc-num {
-    font-size: clamp(2.6rem, calc(56 / 375 * 100vw), 4rem);
-    line-height: 1;
+    font-size: var(--heat-num-size);
+    line-height: 0.86;
   }
 
   .hc-label {
@@ -1500,17 +1570,31 @@ main {
     padding-left: max(1.25rem, env(safe-area-inset-left));
   }
 
+  /* bigger type and the headline block centred in the space above the CTA —
+     the old sizes left a ~450px hole in the middle of a phone screen */
+  .footer-giant {
+    justify-content: flex-start;
+  }
+
+  .footer-giant > div:first-child {
+    margin-block: auto;
+  }
+
   .fx-l1 {
-    font-size: clamp(2.75rem, min(12.5vw, 13svh), 8rem);
+    font-size: clamp(2.75rem, min(16vw, 13svh), 8rem);
   }
 
   .fx-l2 {
-    font-size: clamp(2.25rem, min(8.6vw, 12svh), 6rem);
+    font-size: clamp(2.25rem, min(11vw, 12svh), 6rem);
   }
 
   .fx-cta-row,
   .fx-links {
     width: 100%;
+  }
+
+  .fx-links a {
+    min-height: 44px;
   }
 
 }
@@ -1523,14 +1607,8 @@ main {
 }
 
 /* ================================================================== */
-/* Legacy styles — /ai page and 404 (kept from the previous design)    */
+/* /ai page, shared cursor accent                                      */
 /* ================================================================== */
-
-.body {
-  font-size: clamp(1.05rem, 1.4vw, 1.35rem);
-  line-height: 1.55;
-  color: var(--muted);
-}
 
 .eyebrow {
   font-size: 0.8rem;
@@ -1538,164 +1616,6 @@ main {
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--copper);
-}
-
-.mono {
-  font-family: var(--font-mono);
-  font-size: 0.82em;
-  letter-spacing: 0.02em;
-}
-
-.btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  cursor: pointer;
-  padding: 0.9rem 1.7rem;
-  transition:
-    border-color 0.3s ease,
-    box-shadow 0.3s ease,
-    background-color 0.3s ease;
-  will-change: transform;
-}
-
-.btn:hover {
-  border-color: rgba(221, 184, 146, 0.5);
-  box-shadow: 0 0 24px rgba(221, 184, 146, 0.14);
-}
-
-.btn-primary {
-  background: var(--sand);
-  border-color: var(--sand);
-  color: var(--ink);
-  overflow: hidden;
-}
-
-.btn-primary::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    115deg,
-    transparent 32%,
-    rgba(255, 251, 246, 0.55) 50%,
-    transparent 68%
-  );
-  transform: translateX(-130%);
-  animation: btn-shine 4.6s ease-in-out infinite 1.4s;
-  pointer-events: none;
-}
-
-.btn-primary:hover {
-  background: var(--tan);
-  border-color: var(--tan);
-}
-
-@keyframes btn-shine {
-  0%,
-  62% {
-    transform: translateX(-130%);
-  }
-  78%,
-  100% {
-    transform: translateX(130%);
-  }
-}
-
-.btn-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  pointer-events: none;
-}
-
-.btn-label svg {
-  width: 1.05em;
-  height: 1.05em;
-}
-
-.ambient {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-  background:
-    linear-gradient(var(--border) 1px, transparent 1px) 0 0 / 100% 96px,
-    linear-gradient(90deg, var(--border) 1px, transparent 1px) 0 0 / 96px 100%;
-  background-color: var(--bg);
-}
-
-.ambient::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--bg);
-  opacity: 0.94;
-}
-
-.grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-  mix-blend-mode: overlay;
-}
-
-.glow-blob {
-  position: absolute;
-  width: 90vmax;
-  height: 90vmax;
-  border-radius: 50%;
-  will-change: transform;
-}
-
-.glow-blob-a {
-  top: -42vmax;
-  left: -28vmax;
-  background: radial-gradient(circle, rgba(221, 184, 146, 0.14) 0%, transparent 62%);
-}
-
-.glow-blob-b {
-  bottom: -46vmax;
-  right: -30vmax;
-  background: radial-gradient(circle, rgba(176, 137, 104, 0.12) 0%, transparent 62%);
-}
-
-.liquid {
-  position: absolute;
-  pointer-events: none;
-  filter: blur(26px);
-}
-
-.liquid svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.liquid-404 {
-  left: 50%;
-  top: 44%;
-  width: min(78vmin, 720px);
-  aspect-ratio: 1;
-  margin-left: calc(min(78vmin, 720px) / -2);
-  margin-top: calc(min(78vmin, 720px) / -2);
-}
-
-.liquid-goo {
-  filter: blur(9px);
 }
 
 .cursor-layer {
@@ -1732,45 +1652,6 @@ main {
   .cursor-ring {
     display: block;
   }
-}
-
-.orbit-ring {
-  border: 1px solid rgba(221, 184, 146, 0.35);
-  border-radius: 50%;
-}
-
-.orbit-orb {
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(230, 204, 178, 0.95) 0%, rgba(221, 184, 146, 0.2) 72%);
-  box-shadow: 0 0 26px var(--glow);
-}
-
-.orbit-dot {
-  border-radius: 50%;
-  background: var(--copper);
-}
-
-.orbit-cross::before,
-.orbit-cross::after {
-  content: "";
-  position: absolute;
-  background: rgba(237, 224, 212, 0.42);
-}
-
-.orbit-cross::before {
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 1.5px;
-  transform: translateX(-50%);
-}
-
-.orbit-cross::after {
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1.5px;
-  transform: translateY(-50%);
 }
 
 .ai-page {
@@ -1826,104 +1707,162 @@ main {
   gap: 1.6rem;
 }
 
-.notfound {
+/* ------------------------------------------------------------------ */
+/* 404 — the homepage's dark first act: starfield, orange arm, NEXOR   */
+/* blackletter numerals                                                 */
+/* ------------------------------------------------------------------ */
+
+.nf {
   position: relative;
   min-height: 100svh;
   display: grid;
   place-items: center;
+  padding: clamp(5rem, 12vh, 8rem) clamp(1.25rem, 5vw, 4rem) clamp(3rem, 8vh, 5rem);
   overflow: clip;
-  background: var(--bg-deep);
-  color: var(--text);
+  color: var(--light);
+  background: var(--dark);
+}
+
+.nf-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.nf-content {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 56rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
 }
 
-.nf-inner {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  justify-items: center;
-  gap: 1.3rem;
-  padding: 2rem;
+.nf-eyebrow {
+  /* Anton, like the hero's "Scroll to explore" cue */
+  font-family: var(--font-head);
+  font-size: clamp(1rem, 1.4vw, 1.3rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(242, 237, 230, 0.6);
 }
 
 .nf-code {
-  font-size: clamp(7rem, 26vw, 20rem);
-  line-height: 0.82;
-  letter-spacing: -0.06em;
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.2rem, 1.5vw, 1.2rem);
+  margin: clamp(0.6rem, 2vh, 1.4rem) 0 clamp(0.8rem, 2.4vh, 1.6rem);
+  color: var(--accent);
+  font-size: clamp(7rem, 30vw, 22rem);
+  filter: drop-shadow(0 18px 60px rgba(0, 0, 0, 0.85));
+  user-select: none;
+}
+
+/* the masks clip the rise; the padding leaves room for the blackletter
+   flags above the line box so nothing is cut once the digits have landed */
+.nf-mask {
+  display: inline-block;
+  overflow: hidden;
+  padding-top: 0.12em;
+  margin-top: -0.12em;
+}
+
+.nf-digit {
+  display: block;
+  will-change: transform;
+}
+
+.nf-digit .nexor-type-glyph {
+  line-height: 0.8;
+}
+
+.nf-title {
+  font-family: var(--font-ext);
   font-weight: 700;
-  color: var(--text);
+  text-transform: uppercase;
+  font-size: clamp(1.3rem, 3.6vw, 2.6rem);
+  line-height: 1;
 }
 
-.nf-line {
-  max-width: 30rem;
+.nf-copy {
+  margin-top: 1rem;
+  max-width: 32rem;
+  font-size: clamp(1rem, 1.25vw, 1.15rem);
+  line-height: 1.55;
+  color: rgba(242, 237, 230, 0.72);
 }
 
-.nf-status {
-  font-size: 0.74rem;
-  color: var(--coffee);
-  min-height: 1.2em;
+.nf-trace {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.7rem;
+  max-width: 100%;
+  margin-top: clamp(1.2rem, 3vh, 2rem);
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgba(242, 237, 230, 0.14);
+  border-radius: 999px;
+  background: rgba(11, 9, 8, 0.6);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: rgba(242, 237, 230, 0.7);
+}
+
+.nf-trace-method {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.nf-trace-path {
+  overflow-wrap: anywhere;
+}
+
+.nf-trace-status {
+  color: var(--accent-soft);
 }
 
 .nf-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.9rem;
-  margin-top: 0.6rem;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
+  margin-top: clamp(1.8rem, 4.5vh, 3rem);
 }
 
-.nf-pulse {
-  position: absolute;
-  left: 50%;
-  top: 44%;
-  width: min(70vmin, 640px);
-  height: min(70vmin, 640px);
-  margin-left: calc(min(70vmin, 640px) / -2);
-  margin-top: calc(min(70vmin, 640px) / -2);
-  border: 1px solid rgba(221, 184, 146, 0.35);
-  border-radius: 50%;
-  opacity: 0;
+.nf-clawd {
+  position: fixed;
+  right: clamp(0.8rem, 2vw, 1.8rem);
+  top: clamp(1.2rem, 3vh, 2.4rem);
+  z-index: 2;
+  width: 96px;
+  height: 96px;
   pointer-events: none;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
 }
 
-.nf-el {
-  position: absolute;
-  display: block;
-  opacity: 0;
-}
+@media (max-width: 899px) {
+  .nf-code {
+    font-size: clamp(6rem, 42vw, 12rem);
+  }
 
-.nf-el-a {
-  width: 130px;
-  height: 130px;
-  left: 14%;
-  top: 22%;
-  border-style: dashed;
-}
+  .nf-actions {
+    width: min(100%, 22rem);
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 
-.nf-el-b {
-  width: 13px;
-  height: 13px;
-  right: 20%;
-  top: 28%;
-}
+  .nf-actions .pill {
+    width: 100%;
+    min-width: 0;
+  }
 
-.nf-el-c {
-  width: 18px;
-  height: 18px;
-  left: 22%;
-  bottom: 24%;
-}
-
-.nf-el-d {
-  width: 7px;
-  height: 7px;
-  right: 26%;
-  bottom: 30%;
-}
-
-@media (max-width: 560px) {
-  .nf-el {
-    display: none;
+  .nf-clawd {
+    width: 64px;
+    height: 64px;
   }
 }
 
@@ -1932,12 +1871,6 @@ main {
 /* ------------------------------------------------------------------ */
 
 @media (prefers-reduced-motion: reduce) {
-  .nf-el,
-  .nf-status,
-  .grain {
-    display: none;
-  }
-
   .heat {
     height: auto;
     background: var(--light);
@@ -1969,6 +1902,8 @@ main {
     position: relative;
     inset: auto;
     width: 100%;
+    height: auto;
+    aspect-ratio: 1;
     opacity: 1;
     visibility: visible;
     transform: none;

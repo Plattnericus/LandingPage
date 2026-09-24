@@ -37,8 +37,13 @@ export default function Footer() {
   return (
     <footer ref={sectionRef} className="footer-giant" id="contact" aria-label="Contact">
       <div>
+        {/* two fixed lines, like fx-l2: the type also scales with viewport
+            height, and a smaller size must not reflow this into one line */}
         <p className="fx-type fx-l1">
-          Nexor is <span className="fx-accent">open source</span>
+          <span className="fx-l1-line">
+            Nexor is <span className="fx-accent">open</span>
+          </span>{" "}
+          <span className="fx-l1-line fx-accent">source</span>
         </p>
         <p className="fx-type fx-l2">
           <span className="fx-l2-line">open to projects</span>
@@ -62,7 +67,6 @@ export default function Footer() {
             Modrinth
           </a>
           <a href={`mailto:${siteConfig.email}`}>Mail</a>
-          <a href={siteConfig.url}>plattnericus.dev</a>
         </nav>
       </div>
     </footer>

@@ -7,7 +7,7 @@ Robots: https://plattnericus.dev/robots.txt
 LLM summary: https://plattnericus.dev/llms.txt
 Full LLM profile: https://plattnericus.dev/llms-full.txt
 GitHub: https://github.com/Plattnericus
-Email: felix.plattner89@icloud.com
+Email: mailme@plattnericus.dev
 
 Preferred entity name: Nexor / Plattnericus
 Alternate names: Nexor, Plattnericus
